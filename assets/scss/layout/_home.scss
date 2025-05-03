@@ -1,0 +1,107 @@
+.banner {
+
+    img {
+        width: 100%;
+    }
+}
+
+.offersGrid {
+
+    .offerBox {
+        margin-bottom: 15px;
+        display: block;
+    }
+}
+
+.videos {
+
+    .videoCarousel {
+        position: relative;
+        padding: 40px 0;
+
+        &:after,
+        &:before {
+            position: absolute;
+            content: '';
+            background-image: url('../img/film.png');
+            background-repeat: repeat;
+            background-size: contain;
+            width: 100%;
+            height: 40px;
+        }
+
+        &:before {
+            top: 0;
+        }
+
+        &:after {
+            bottom: 0;
+            @include transform(rotate(180deg));
+        }
+
+        .item {
+            margin: 5px;
+
+            a {
+                display: block;
+                text-align: center;
+
+                img {
+                    width: 100%;
+                    @include border-radius(4px);
+                }
+
+                span {
+                    display: inline-block;
+                    text-align: center;
+                    font-size: 16px;
+                    text-decoration: none;
+                    color: #000;
+                    font-weight: 600;
+                    line-height: 40px;
+                }
+            }
+        }
+    }
+}
+
+// Styles specific to the Home View
+.home-view {
+    .welcome-header h2 {
+        font-weight: 600;
+        line-height: 1.2;
+    }
+
+    .section-title {
+        font-weight: 600;
+        margin-bottom: 0;
+    }
+
+    // --- Styles for RecipeSearch component on Home View ---
+    .recipe-search-component {
+        max-width: 600px; // Allow it to be wider on home
+        margin-left: auto;
+        margin-right: auto;
+
+        .search-input {
+            // Make input larger on home page
+            font-size: 1.1rem;
+            padding-top: 0.6rem;
+            padding-bottom: 0.6rem;
+        }
+
+        .search-loader-addon {
+
+            // Adjust addon padding/size if input size changed
+            .search-loader {
+                font-size: 1rem; // Match input font size increase slightly
+            }
+        }
+
+        .suggestions-dropdown {
+            font-size: 1rem; // Make suggestions text slightly larger
+        }
+    }
+
+    // .home-recipe-img class removed as it wasn't used in the template.
+}

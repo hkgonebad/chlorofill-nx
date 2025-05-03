@@ -1,0 +1,67 @@
+/* SCSS for Auth Pages (Login/Signup) */
+
+// Use variables from _variables.scss if needed
+// @import 'variables'; 
+
+.authLayoutContent {
+    // This class would wrap the form inside LoginView/SignupView
+    background-color: var(--bs-body-bg);
+    padding: 2rem;
+    border-radius: var(--bs-border-radius-lg);
+    box-shadow: var(--bs-box-shadow-sm);
+    max-width: 420px;
+    width: 100%;
+    margin: 5rem auto 3rem auto;
+}
+
+.authLogo {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 1.5rem;
+    width: auto; // Let height control size
+    height: 40px; // Set explicit height
+    content: url('/img/cf-logo-light.png'); // Default to light logo
+}
+
+.authForm {
+    // Specific form styles if needed
+}
+
+/* Floating labels adjustments might be needed if default Bootstrap isn't sufficient */
+/*
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+    // Custom styles
+}
+.form-floating > label {
+    // Custom styles
+}
+*/
+
+/* Link styles */
+.authLinks {
+    margin-top: 1.5rem;
+    font-size: 0.9em;
+    color: var(--bs-secondary-color);
+
+    a {
+        color: var(--bs-primary);
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+/* Dark mode adjustments */
+[data-bs-theme="dark"] {
+    .authLayoutContent {
+        // box-shadow: var(--bs-box-shadow-dark); // Add if you define a dark shadow
+        background-color: var(--bs-tertiary-bg);
+    }
+
+    .authLogo {
+        content: url('/img/cf-logo-dark.png'); // Switch to dark logo in dark mode
+    }
+}

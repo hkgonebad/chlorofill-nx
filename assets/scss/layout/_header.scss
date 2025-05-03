@@ -1,0 +1,136 @@
+.topHeader {
+    background: $primary;
+    position: sticky;
+    color: #fff;
+    padding: 0.5rem 0;
+    z-index: 999;
+
+    .container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 55px;
+    }
+
+    .navbar {
+        padding: 0;
+
+        .navbar-toggler {
+            color: #fff;
+            box-shadow: none;
+            font-size: 1rem;
+            height: 35px;
+            width: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+
+            @include media-breakpoint-down(md) {
+                font-size: 1rem;
+            }
+        }
+
+        .offcanvas-start {
+            width: 280px;
+
+            .offcanvas-body {
+                padding-right: 0;
+                padding-left: 0;
+
+                .navbar-nav {
+
+                    .nav-link,
+                    .dropdown-item {
+                        padding: 8px 15px;
+                        background: transparent;
+                        color: #000;
+                        position: relative;
+                        text-transform: capitalize;
+                        font-weight: 500;
+                        font-size: 1rem;
+
+                        &.disabled {
+                            opacity: 0.5;
+                            pointer-events: none;
+                            font-weight: 400;
+                            font-size: .875rem;
+                        }
+
+                        &:after {
+                            position: absolute;
+                            right: 15px;
+                            top: 20px;
+                        }
+
+                        &.active,
+                        &:hover {
+                            background: $primary;
+                            color: #fff;
+                        }
+                    }
+
+                    .dropdown-menu {
+                        margin: 15px;
+                        border-color: #e1e1e1;
+
+                        .dropdown-item {
+                            text-transform: capitalize;
+                            font-weight: 400;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    .logo {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+
+        @include media-breakpoint-down(md) {
+            position: relative;
+            left: 0;
+            transform: none;
+            margin-right: auto;
+        }
+
+        img {
+            max-height: 40px;
+            // filter: brightness(0) invert(1);
+
+            @include media-breakpoint-down(md) {
+                max-height: 30px;
+            }
+        }
+    }
+
+    .extras {
+        .btn {
+            padding: 0.25rem 0.5rem;
+            border-color: rgba(255, 255, 255, 0.25);
+
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+
+            &.btn-outline-secondary {
+                color: #fff;
+            }
+        }
+
+        .theme-toggle-btn .fa-moon,
+        .theme-toggle-btn .fa-sun {
+            display: inline-block;
+        }
+
+        .theme-toggle-btn .fa-moon {
+            display: none;
+        }
+
+        // --- START Search Autocomplete Styles ---
+        // MOVED TO scss/components/_recipe-search.scss
+        // --- END Search Autocomplete Styles ---
+    }
+}

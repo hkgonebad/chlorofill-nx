@@ -1,0 +1,63 @@
+// scss/pages/_not-found.scss
+
+// Styling for the 404 Not Found view
+.notFoundView {
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .display-1 {
+        font-size: 7rem;
+        font-weight: $font-weight-bold;
+        color: $secondary; // Use secondary theme color
+        line-height: 1;
+    }
+
+    svg {
+        margin-bottom: $spacer * 1.5;
+        color: $body-color; // Use default body color
+
+        // Adjust embedded SVG colors if needed, using currentColor usually works
+        // Example for specific parts if currentColor isn't sufficient:
+        // ellipse[fill="currentColor"] { fill: $gray-100; } // Light theme hat part
+        // rect[fill="#e0e0e0"] { fill: $gray-300; } // Light theme glass stem
+        // ellipse[fill="#b3e0ff"] { fill: $blue-200; } // Light theme liquid
+        // ellipse[fill="#ffb3c6"] { fill: $pink-200; } // Light theme garnish
+    }
+
+    .btn {
+        min-width: 150px;
+    }
+
+    @include media-breakpoint-down(sm) {
+        .display-1 {
+            font-size: 4rem;
+        }
+
+        svg {
+            width: 80px;
+            height: 80px;
+        }
+    }
+}
+
+// Dark mode overrides
+[data-bs-theme="dark"] {
+    .notFoundView {
+        // Use dark theme variables
+
+        .display-1 {
+            color: $primary; // Use primary color in dark mode for contrast
+        }
+
+        svg {
+            color: $body-color-dark;
+            // Adjust SVG parts for dark mode if needed
+            // ellipse[fill="currentColor"] { fill: $gray-800; } // Dark theme hat part
+            // rect[fill="#e0e0e0"] { fill: $gray-600; } // Dark theme glass stem
+            // ellipse[fill="#b3e0ff"] { fill: $blue-700; } // Dark theme liquid
+            // ellipse[fill="#ffb3c6"] { fill: $pink-700; } // Dark theme garnish
+        }
+    }
+}

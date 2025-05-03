@@ -1,0 +1,140 @@
+/* Default base styles */
+:root {
+    /* Adjust default Bootstrap font sizes if needed via CSS vars */
+    /* --bs-body-font-size: 0.95rem; */
+}
+
+body {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    /* Smoother font rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    height: 100%;
+    min-height: 100lvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+main {
+    padding-top: 0px;
+    padding-bottom: 70px;
+}
+
+
+img {
+    @extend .img-fluid;
+}
+
+.block {
+    padding: 15px 0;
+
+    // & ~ .block{
+    //     padding-bottom: 0;
+    // }
+
+    &.overlay {
+        position: relative;
+        background-repeat: no-repeat;
+        background-color: transparent;
+        background-position: center;
+
+        &:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            background-color: $primary;
+            opacity: 0.9;
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+        }
+    }
+}
+
+.section-title {
+    padding: 8px 0;
+    font-size: 1.2rem;
+    margin: 0;
+    font-weight: bold;
+
+    &.section-title-sm {
+        font-size: 1rem;
+        font-weight: 400;
+        margin-bottom: 10px;
+    }
+
+    @include media-breakpoint-up(md) {
+        font-size: 1.8rem;
+        margin-bottom: 15px;
+    }
+}
+
+.btn {
+
+    &.btn-primary,
+    &.btn-secondary,
+    &.btn-danger {
+        color: $white;
+
+        &:active,
+        &:focus,
+        &:hover {
+            color: $white;
+        }
+    }
+
+    &.btn-outline-primary,
+    &.btn-outline-secondary,
+    &.btn-outline-danger {
+
+        &:hover,
+        &:focus,
+        &:active,
+        &:focus-visible {
+            color: $white;
+        }
+    }
+}
+
+.back-button-icon {
+    width: 35px;
+    height: 35px;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--bs-box-shadow-sm);
+    flex-shrink: 0;
+}
+
+.offer-section .card {
+    border: 1px solid var(--bs-border-color-translucent);
+}
+
+.card-img-wrapper {
+    position: relative; // Context for absolute positioning
+
+    .offer-badge {
+        position: absolute;
+        top: 0.75rem; // Adjust as needed
+        right: 0.75rem; // Adjust as needed
+        z-index: 1; // Ensure badge is above the image
+        font-size: 0.75em; // Slightly smaller badge text
+        padding: 0.3em 0.5em;
+    }
+}
+
+// Ensure buttons align at the bottom even if content height varies
+.card-body {
+    .btn {
+        margin-top: auto; // Pushes the button to the bottom of the flex container
+    }
+}

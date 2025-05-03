@@ -1,0 +1,35 @@
+// Import YOUR custom variables to override Bootstrap defaults
+@import 'layout/variables';
+
+// Import Open Props easings
+@import "open-props/easings.min.css";
+
+// Import the rest of Bootstrap OR specific components
+@import "bootstrap/scss/bootstrap";
+
+
+@import 'layout/typo';
+@import 'layout/default';
+@import 'layout/auth';
+
+
+@import 'primeicons/primeicons.css';
+@import 'plugins/animate';
+@import 'plugins/prefixer';
+
+
+@import 'layout/header';
+@import 'layout/footer';
+@import 'layout/home';
+@import 'layout/about';
+@import 'layout/category';
+@import 'layout/category-recipes';
+@import 'layout/recipe-detail';
+@import 'layout/cocktail-list';
+@import 'layout/cocktail-detail';
+@import 'layout/not-found';
+@import 'components/category-carousel';
+@import 'components/recipe-search';
+@import 'components/theme-toggle';
+
+@import 'layout/dark-mode';

@@ -1,0 +1,182 @@
+footer {
+    border-top: 1px solid #E8E8E8;
+    background: url(../img/footerbanner.jpg);
+    background-repeat: no-repeat;
+    background-size: cover;
+
+    .footerBanner {
+        text-align: center;
+        padding: 15px 0;
+        margin-top: 10px;
+        position: relative;
+
+        h4 {
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: #0292ce;
+            margin-bottom: 0;
+
+            @include media-breakpoint-up(md) {
+                font-size: 1.8rem;
+            }
+        }
+
+        p {
+            font-size: 1rem;
+            color: #fff;
+            margin-bottom: 20px;
+
+            @include media-breakpoint-up(md) {
+                font-size: 1.2rem;
+            }
+        }
+
+        .row {
+            @include media-breakpoint-down(md) {
+                flex-direction: column-reverse;
+            }
+        }
+
+        .fbBigImg {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+
+            @include media-breakpoint-down(md) {
+                margin-top: 15px;
+                display: none;
+            }
+        }
+
+        .fbBottom {
+            display: flex;
+            align-items: center;
+
+            @include media-breakpoint-up(md) {
+                display: block;
+            }
+
+            .fbImg {
+                @include media-breakpoint-up(md) {
+                    margin-bottom: 10px;
+                    display: none;
+                }
+
+                img {
+                    height: auto;
+                    width: 50px;
+                }
+            }
+
+            .fbDetails {
+                display: flex;
+                align-items: center;
+                flex: 1;
+                justify-content: space-evenly;
+
+                .fbDetail {
+                    padding: 0 5px;
+                    width: 100%;
+
+                    p {
+                        font-size: .9rem;
+                        color: #fff;
+                        margin-bottom: 10px;
+                        font-weight: 600;
+
+                        @include media-breakpoint-up(md) {
+                            font-size: 1.1rem;
+                        }
+
+                        span {
+                            display: block;
+                            font-weight: 400;
+                        }
+                    }
+                }
+            }
+
+
+        }
+    }
+
+    .stickyFooter {
+        background: #fff;
+        @include border-radius($border-radius-lg $border-radius-lg 0 0);
+        display: flex;
+        align-items: center;
+        padding: 10px 0;
+
+        .listFooter {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+
+            li {
+                width: 1%;
+                flex: 1;
+            }
+
+            a {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-flow: column;
+                color: #444;
+                text-decoration: none;
+                font-size: .9rem;
+
+                img {
+                    margin-right: 5px;
+                }
+            }
+        }
+    }
+}
+
+// Bottom Navigation Bar Styles
+
+.bottom-nav {
+    height: 65px;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    background-color: var(--bs-body-bg);
+    border-top: 1px solid var(--bs-border-color);
+}
+
+.bottom-nav .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--bs-secondary-color);
+    padding: 5px 0;
+    flex-grow: 1;
+    transition: color 0.2s ease;
+
+    .fas,
+    .far,
+    .fab {
+        font-size: 1.3rem;
+        margin-bottom: 2px;
+    }
+
+    .nav-text {
+        font-size: 0.7rem;
+        line-height: 1;
+    }
+
+    &.active {
+        color: var(--bs-primary);
+    }
+
+    &:hover {
+        color: var(--bs-primary);
+    }
+}
+
+// Dark mode handled by _dark-mode.scss overrides for .bottom-nav if needed,
+// or by CSS variables changing automatically.
+// Example dark mode override was in component, let's add it to _dark-mode.scss instead.

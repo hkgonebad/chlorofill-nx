@@ -1,0 +1,63 @@
+.category{
+
+    .categoryBox{
+        padding: 20px 0;
+
+        .catImg{
+            margin-bottom: 10px;
+
+            img{
+                width: 100%;
+            }
+        }
+
+        .catDetails{
+
+            ul{
+                margin: 0 0 15px;
+                padding: 0 0 0 10px;
+                list-style-type: none;
+
+                li{
+                    position: relative;
+                    padding-left: 15px;
+                    font-size: .9rem;
+                    line-height: 1.2;
+
+                    &:before{
+                        content: '\f105';
+                        font-family: 'Font Awesome 6 Free';
+                        font-weight: 900;
+                        position: absolute;
+                        left: 0;
+                        top: 3px;
+                        font-size: 12px;
+                    }
+                }
+            }
+
+            .iconBox{
+                display: flex;
+                
+                .ibox{
+                    display: flex;
+                    padding: 0 10px;
+                    flex: 1;
+
+                    img{
+                        max-height: 20px;
+                        width: auto;
+                        margin-right: 10px;
+                        padding-top: 2px;
+                    }
+
+                    p{
+                        font-size: .8rem;
+                        margin: 0;
+                        line-height: 1.2;
+                    }
+                }
+            }
+        }
+    }
+}

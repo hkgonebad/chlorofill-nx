@@ -1,0 +1,223 @@
+// Dark Mode Styles using data-bs-theme attribute
+
+// Ensure Bootstrap variables are available (import Bootstrap SCSS in main JS/SCSS)
+
+[data-bs-theme="dark"] {
+    // Override Bootstrap background and text colors
+    // Use variables defined in Bootstrap's _variables-dark.scss or define your own
+    --bs-body-bg: #1a1a1a; // Example slightly different dark
+    --bs-body-color: #f0f0f0;
+    --bs-secondary-bg: #2b2b2b;
+    --bs-tertiary-bg: #212121;
+
+    // Example: Dark mode for cards (adjust selectors as needed)
+    .card {
+        background-color: var(--bs-secondary-bg);
+        border-color: #444;
+        color: var(--bs-body-color); // Ensure text color inherits
+    }
+
+    // Example: Dark mode for buttons
+    .btn-light {
+        background-color: #444;
+        border-color: #555;
+        color: var(--bs-body-color);
+
+        &:hover {
+            background-color: #555;
+            border-color: #666;
+        }
+    }
+
+    // Add more overrides for specific components as needed
+    // e.g., header background, footer background, link colors
+    .topHeader {
+        background-color: var(--bs-secondary-bg);
+        border-bottom-color: var(--bs-border-color-translucent);
+
+        // Override colors for icons/buttons
+        .navbar-toggler {
+            color: var(--bs-body-color);
+            border-color: rgba(255, 255, 255, 0.15);
+
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+        }
+
+        // Separately style .extras .btn if needed, but DON'T override theme toggle color here
+        // Example (adjust if necessary):
+        .extras .btn {
+            border-color: rgba(255, 255, 255, 0.15);
+
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+
+            // NOTE: Intentionally NOT setting 'color' here
+        }
+
+        .logo img {
+            //  filter: brightness(0) invert(1);
+        }
+
+        /* Theme toggle specific styles for dark mode */
+        .extras .theme-toggle-btn .fa-sun {
+            display: none;
+        }
+
+        .extras .theme-toggle-btn .fa-moon {
+            display: inline-block;
+        }
+
+        .offcanvas {
+            // Set base offcanvas theme variables
+            --bs-offcanvas-bg: var(--bs-body-bg, #1a1a1a);
+            --bs-offcanvas-color: var(--bs-body-color, #f0f0f0);
+            --bs-offcanvas-border-color: var(--bs-border-color-translucent, rgba(255, 255, 255, 0.15));
+            color: var(--bs-offcanvas-color); // Ensure text inside inherits
+
+            .offcanvas-header {
+                .btn-close {
+                    filter: invert(1) grayscale(100%) brightness(200%);
+                }
+
+                .offcanvas-title {
+                    color: var(--bs-offcanvas-color); // Explicitly set title color
+                }
+            }
+
+            .offcanvas-body {
+
+                .nav-link,
+                .dropdown-item {
+                    // --- Force default link color in dark mode --- 
+                    color: var(--bs-body-color, #f0f0f0) !important;
+                    background-color: transparent !important; // Ensure no light background is inherited
+
+                    // --- Handle hover/active --- 
+                    &:hover,
+                    &.router-link-active,
+                    &.router-link-exact-active,
+                    &.active {
+                        background-color: var(--bs-primary, #4CAF50) !important; // Use primary color (green)
+                        color: var(--bs-light, #f8f9fa) !important; // Use light contrast color
+                    }
+                }
+
+                // --- Dropdown menu specific --- 
+                .dropdown-menu {
+                    --bs-dropdown-bg: var(--bs-tertiary-bg, #212121);
+                    --bs-dropdown-border-color: var(--bs-border-color-translucent, rgba(255, 255, 255, 0.15));
+                    --bs-dropdown-link-color: var(--bs-body-color, #f0f0f0);
+                    --bs-dropdown-link-hover-bg: var(--bs-secondary-bg, #2b2b2b);
+                    --bs-dropdown-link-hover-color: var(--bs-body-color, #f0f0f0);
+                    --bs-dropdown-link-active-bg: var(--bs-primary, #4CAF50);
+                    --bs-dropdown-link-active-color: var(--bs-light, #f8f9fa);
+
+                    // Ensure dropdown items within the menu inherit correctly
+                    .dropdown-item {
+                        color: var(--bs-dropdown-link-color) !important;
+                        background-color: transparent !important; // Reset background
+
+                        &:hover,
+                        &.active {
+                            color: var(--bs-dropdown-link-hover-color) !important;
+                            background-color: var(--bs-dropdown-link-hover-bg) !important;
+                        }
+
+                        &.active {
+                            color: var(--bs-dropdown-link-active-color) !important;
+                            background-color: var(--bs-dropdown-link-active-bg) !important;
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- START Dark Mode Search Autocomplete Styles ---
+        // MOVED TO main dark mode block, targeting .recipe-search-component
+        // --- END Dark Mode Search Autocomplete Styles ---
+
+    }
+
+    .stickyFooter {
+        background-color: var(--bs-secondary-bg);
+        border-top: 1px solid var(--bs-border-color-translucent, rgba(255, 255, 255, 0.15));
+
+        // Override hardcoded colors from _footer.scss
+        .listFooter a {
+            color: var(--bs-body-color); // Use body text color
+        }
+
+        .listFooter img {
+            filter: brightness(0) invert(1); // Invert footer icons
+        }
+    }
+
+    // Adjust link colors if needed
+    a {
+        // color: var(--bs-link-color); // Uses Bootstrap dark variables if available
+    }
+
+    // === Footer Overrides ===
+    // Specific overrides for old footer removed as structure changed
+
+    // ==================================================
+    // Global Dark Mode Styles for Components
+    // ==================================================
+
+    .recipe-search-component {
+
+        // Style the input group addon in dark mode
+        .search-loader-addon {
+            background-color: transparent;
+            border-left: none;
+            border-color: var(--bs-border-color); // Match input group border
+
+            // Color for the spinner icon inside the addon
+            .search-loader {
+                color: var(--bs-secondary-color);
+            }
+        }
+
+        .suggestions-dropdown {
+            background-color: var(--bs-tertiary-bg); // Darker background for dropdown
+            border-color: var(--bs-border-color); // Use standard dark border color
+
+            .list-group-item,
+            .list-group-item-action {
+                color: var(--bs-body-color); // Ensure text is light
+
+                &:hover,
+                &:focus {
+                    background-color: var(--bs-dark-subtle); // Use subtle dark hover
+                }
+            }
+
+            // Ensure loading/no results text is also light
+            .text-muted {
+                color: var(--bs-secondary-color) !important; // Use a lighter muted color
+            }
+        }
+    }
+
+    // === Bottom Nav Overrides ===
+    .bottom-nav {
+        background-color: var(--bs-secondary-bg);
+        border-top-color: var(--bs-border-color-translucent);
+
+        // Link colors should adjust based on body color or specific overrides if needed
+        .nav-item {
+            color: var(--bs-secondary-color); // Default non-active color
+
+            &:hover {
+                color: var(--bs-primary); // Hover color
+            }
+
+            &.active {
+                color: var(--bs-primary); // Active color (often same as hover)
+            }
+        }
+    }
+}

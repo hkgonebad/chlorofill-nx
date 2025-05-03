@@ -1,0 +1,34 @@
+// Styles for the Category Carousel Component
+.category-carousel-wrapper {
+    .category-item {
+        display: block;
+        color: var(--bs-body-color);
+    }
+
+    .category-image {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+        background-color: var(--bs-tertiary-bg);
+        border-radius: 50%;
+        padding: 5px;
+        transition: transform 0.2s ease;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .category-item:hover .category-image {
+        transform: scale(1.1);
+    }
+
+    .category-name {
+        color: var(--bs-emphasis-color);
+        font-size: 0.75rem;
+    }
+
+    /* Ensure swiper slides have correct width */
+    .swiper-slide {
+        width: auto !important;
+
+    }
+}

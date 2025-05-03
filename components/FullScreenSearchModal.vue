@@ -72,7 +72,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, nextTick } from "vue";
+import { ref, watch, onMounted, nextTick, onBeforeUnmount } from "vue";
 import { useMealApi } from "~/composables/useMealApi";
 import { useCocktailApi } from "~/composables/useCocktailApi";
 import { debounce } from "lodash-es";
@@ -87,6 +87,7 @@ const { searchCocktails } = useCocktailApi();
 
 const modalRef = ref(null);
 const searchInputRef = ref(null);
+const bsModal = ref(null);
 const searchQuery = ref("");
 const isLoading = ref(false);
 const results = ref([]);
@@ -95,17 +96,57 @@ const MIN_SEARCH_LENGTH = 3;
 watch(
   () => props.visible,
   async (newValue) => {
-    if (newValue) {
-      await nextTick();
-      searchInputRef.value?.focus();
-    } else {
-      searchQuery.value = "";
-      results.value = [];
-      isLoading.value = false;
+    if (process.client) {
+      if (!bsModal.value) {
+        console.warn("Bootstrap modal instance not ready yet in watch effect.");
+        return;
+      }
+      if (newValue) {
+        bsModal.value?.show();
+        await nextTick();
+        searchInputRef.value?.focus();
+      } else {
+        bsModal.value?.hide();
+      }
+      if (!newValue) {
+        searchQuery.value = "";
+        results.value = [];
+        isLoading.value = false;
+      }
     }
   },
   { immediate: false }
 );
+
+onMounted(async () => {
+  if (process.client && modalRef.value) {
+    try {
+      const { Modal } = await import("bootstrap");
+
+      bsModal.value = new Modal(modalRef.value);
+
+      modalRef.value.addEventListener("hidden.bs.modal", () => {
+        if (modalRef.value) {
+          emit("update:visible", false);
+        }
+      });
+
+      if (props.visible) {
+        bsModal.value?.show();
+        await nextTick();
+        searchInputRef.value?.focus();
+      }
+    } catch (e) {
+      console.error("Failed to dynamically import or initialize Bootstrap modal:", e);
+    }
+  }
+});
+
+onBeforeUnmount(() => {
+  if (process.client) {
+    bsModal.value?.dispose();
+  }
+});
 
 const closeModal = () => {
   emit("update:visible", false);

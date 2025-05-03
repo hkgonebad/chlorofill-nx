@@ -1,75 +1,106 @@
-# Nuxt Minimal Starter
+# ChloroFill - A Nuxt Recipe 🍴🍹
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+[![Powered by Nuxt](https://img.shields.io/badge/Powered_by-Nuxt-00DC82?style=flat-square&logo=nuxt.js&logoColor=white)](https://nuxt.com/)
+[![Made with Vue.js](https://img.shields.io/badge/Made_with-Vue.js-4FC08D?style=flat-square&logo=vue.js&logoColor=white)](https://vuejs.org/)
+[![Managed with Bun](https://img.shields.io/badge/Managed_with-Bun-FBF0DF?style=flat-square&logo=bun&logoColor=black)](https://bun.sh/)
+[![Styled with Bootstrap](https://img.shields.io/badge/Styled_with-Bootstrap-7952B3?style=flat-square&logo=bootstrap&logoColor=white)](https://getbootstrap.com/)
+[![Powered by Supabase](https://img.shields.io/badge/Powered_by-Supabase-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com/)
 
-## Setup
+ChloroFill (Nuxt Edition) is a web application showcasing meal and cocktail recipes, built with Vue 3 and Nuxt 3, leveraging Server-Side Rendering (SSR) for enhanced SEO and performance. It is a migration from the original ChloroFill Vue SPA.
 
-Make sure to install dependencies:
+## Project Overview
 
-```bash
-# npm
-npm install
+This project demonstrates migrating a feature-rich Vue 3 SPA to the Nuxt 3 framework to gain the benefits of SSR, file-based routing, and Nuxt's ecosystem.
 
-# pnpm
-pnpm install
+Key features inherited and adapted from the original SPA:
 
-# yarn
-yarn install
+*   **Vue 3 (Composition API):** Utilizing `<script setup>` for clean component development.
+*   **Nuxt 3:** Providing SSR, file-based routing, auto-imports, and module integration.
+*   **Supabase:** Integrated for user authentication (Signup, Login, Magic Link, Logout) and profile management using `@nuxtjs/supabase`.
+*   **External APIs:** Fetching recipe data from TheMealDB and TheCocktailDB via composables.
+*   **Routing:** File-based routing managed by Nuxt.
+*   **Styling:** Responsive design using Bootstrap 5 (SCSS) integrated via Nuxt config and global assets.
+*   **State Management:** Primarily using Vue Composables, potentially enhanced with Pinia (`@pinia/nuxt`).
+*   **Meta Tags:** Dynamic page titles and meta descriptions managed via Nuxt's built-in `useHead` composable.
 
-# bun
-bun install
-```
+## Why Nuxt?
 
-## Development Server
+*   **Server-Side Rendering (SSR):** Improves initial load performance and SEO.
+*   **Dynamic Meta Tags:** Enables unique meta tags for dynamic routes, enhancing social sharing.
+*   **File-Based Routing:** Simplifies route management.
+*   **Auto Imports:** Reduces boilerplate for importing components and composables.
+*   **Module Ecosystem:** Leverages modules like `@nuxtjs/supabase`, `@nuxtjs/color-mode`, etc.
 
-Start the development server on `http://localhost:3000`:
+## Technology Stack (Nuxt Version)
 
-```bash
-# npm
-npm run dev
+*   **Framework:** Nuxt 3 (using Vue 3 Composition API)
+*   **Package Manager:** Bun
+*   **Backend:** Supabase (Auth, Database) via `@nuxtjs/supabase`
+*   **Routing:** Nuxt File-Based Routing
+*   **Styling:** Bootstrap 5 (SCSS), PrimeIcons
+*   **State Management:** Vue Composables (potentially Pinia)
+*   **APIs:** TheMealDB, TheCocktailDB (via Composables)
+*   **Libraries & Modules:** `@nuxtjs/google-fonts`, `@pinia/nuxt`, `@vueuse/nuxt`, `vue-toastification`, `lodash-es`, `swiper`, `@nuxtjs/color-mode` (for theme)
 
-# pnpm
-pnpm dev
+## Project Setup
 
-# yarn
-yarn dev
+1.  **Clone the repository:**
+    ```bash
+    # Make sure you are in the chlorofill-nuxt directory
+    git clone <your-repo-url> chlorofill-nuxt
+    cd chlorofill-nuxt
+    ```
 
-# bun
-bun run dev
-```
+2.  **Install dependencies:**
+    ```bash
+    bun install
+    ```
 
-## Production
+3.  **Environment Setup:**
+    *   Create a `.env` file in the root directory.
+    *   Add your Supabase credentials (obtain from your Supabase project settings):
+        ```dotenv
+        # Required by @nuxtjs/supabase
+        SUPABASE_URL=YOUR_SUPABASE_URL
+        SUPABASE_KEY=YOUR_SUPABASE_ANON_KEY 
+        
+        # Optional: For redirect URLs if needed
+        # SUPABASE_REDIRECT_URL=http://localhost:3000/confirm 
+        ```
 
-Build the application for production:
+4.  **Run the development server:**
+    ```bash
+    bun run dev
+    ```
+    The application will be available at `http://localhost:3000`.
 
-```bash
-# npm
-npm run build
+## Development Notes
 
-# pnpm
-pnpm build
+*   **Composables:** API logic (`useMealApi`, `useCocktailApi`), state management (`useFavorites`, `useTheme`), etc., are located in the `composables/` directory.
+*   **Components:** Reusable UI components are in `components/`.
+*   **Pages:** Top-level routes and views are defined by `.vue` files in the `pages/` directory.
+*   **Layouts:** Define overall page structure (e.g., `default.vue`, `auth.vue`) in the `layouts/` directory.
+*   **Styling:** Global styles and Bootstrap integration are managed in `assets/scss/main.scss`.
+*   **Configuration:** Nuxt behavior, modules, and environment variables are configured in `nuxt.config.ts`.
 
-# yarn
-yarn build
+## Deployment (Vercel Example)
 
-# bun
-bun run build
-```
+1.  Push your code to a Git provider.
+2.  Import the project into Vercel.
+3.  Configure Vercel settings:
+    *   **Framework Preset:** Nuxt
+    *   **Install Command:** `bun install` (or `npm install` if you switch)
+    *   **Environment Variables:** Add `SUPABASE_URL` and `SUPABASE_KEY` with your Supabase project values.
+4.  Deploy!
 
-Locally preview production build:
 
-```bash
-# npm
-npm run preview
+## Future Enhancements
 
-# pnpm
-pnpm preview
+*   User Recipe Submissions
+*   Server-side recipe saving
+*   Recipe/Cocktail rating system
+*   Advanced filtering options
 
-# yarn
-yarn preview
+## License
 
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+[MIT License](LICENSE) <!-- Ensure a LICENSE file exists -->

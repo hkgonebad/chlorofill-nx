@@ -26,7 +26,7 @@
           <SkeletonCard v-for="n in 4" :key="'sk-' + n" />
         </div>
         <!-- Error State -->
-        <ErrorMessage v-else-if="errorFeatured" :message="errorFeatured" />
+        <ErrorMessage v-else-if="errorFeatured" :message="errorFeatured?.message || errorFeatured" />
         <!-- Recipe Grid -->
         <div v-else-if="featuredRecipes.length > 0" class="row row-cols-2 row-cols-md-4 g-4">
           <ItemCard
@@ -60,7 +60,7 @@
           <SkeletonCard v-for="n in 4" :key="'sk-cocktail-' + n" />
         </div>
         <!-- Error State -->
-        <ErrorMessage v-else-if="errorCocktails" :message="errorCocktails" />
+        <ErrorMessage v-else-if="errorCocktails" :message="errorCocktails?.message || errorCocktails" />
         <!-- Cocktail Cards Display (Using ItemCard) -->
         <div v-else-if="featuredCocktails.length > 0" class="row row-cols-2 row-cols-md-4 g-4">
           <ItemCard
@@ -108,7 +108,7 @@
             <SkeletonCard v-for="n in 4" :key="'sk-rec-' + n" />
           </div>
           <!-- Error State -->
-          <ErrorMessage v-else-if="errorRecommended" :message="errorRecommended" />
+          <ErrorMessage v-else-if="errorRecommended" :message="errorRecommended?.message || errorRecommended" />
           <!-- Combined Grid -->
           <div v-else-if="recommendedItems.length > 0" class="row row-cols-2 row-cols-md-4 g-4">
             <template v-for="item in recommendedItems" :key="item.type + '-' + (item.idMeal || item.idDrink)">
@@ -161,7 +161,7 @@ const userGreeting = ref("");
 const { favoriteMealIds, favoriteCocktailIds, isFavoriteMeal, isFavoriteCocktail, toggleMealFavorite, toggleCocktailFavorite } = useFavorites();
 
 // API composables
-const { getMealsByCategory, getMealDetailsById, getRandomMeal } = useMealApi();
+const { getRecipesByCategory, getRecipeById, getRandomMeal } = useMealApi();
 const { getCocktailById, getRandomCocktail } = useCocktailApi(); // Add getCocktailById if needed for recommendations
 
 // --- Fetch Featured Recipes with useAsyncData ---
@@ -230,10 +230,10 @@ const {
       const isMealFav = favoriteMealIds.value.includes(randomFavId);
 
       if (isMealFav) {
-        const detailData = await getMealDetailsById(randomFavId);
+        const detailData = await getRecipeById(randomFavId);
         if (detailData && detailData.strCategory) {
           const sourceCategory = detailData.strCategory;
-          const recommendData = await getMealsByCategory(sourceCategory);
+          const recommendData = await getRecipesByCategory(sourceCategory);
           const featuredMealIds = featuredRecipes.value?.map((r) => r.idMeal) || []; // Handle potential null featuredRecipes
           fetchedMeals = recommendData
             .filter((r) => r.idMeal && !featuredMealIds.includes(r.idMeal) && r.idMeal !== randomFavId)

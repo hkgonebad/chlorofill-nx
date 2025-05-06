@@ -102,6 +102,31 @@
     </div>
 
     <div v-else-if="user && !profileData && !pendingProfile && !profileError" class="alert alert-warning">Could not load profile details. Please try again later or contact support.</div>
+
+    <!-- === Your Favorites Section === -->
+    <section class="favorites-section mt-5">
+      <h3 class="section-title mb-4">Your Favorites</h3>
+      <div v-if="!favoritesLoaded" class="row row-cols-2 row-cols-md-4 g-4 placeholder-glow">
+        <SkeletonCard v-for="n in 4" :key="'sk-fav-' + n" />
+      </div>
+      <ErrorMessage v-else-if="favoritesError" :message="favoritesError" />
+      <div v-else-if="favoriteItems.length > 0" class="row row-cols-2 row-cols-md-4 g-4">
+        <ItemCard
+          v-for="item in favoriteItems"
+          :key="item.type + '-' + (item.idMeal || item.idDrink)"
+          :image-url="item.type === 'meal' ? item.strMealThumb : item.strDrinkThumb"
+          :title="item.type === 'meal' ? item.strMeal : item.strDrink"
+          :link-to="item.type === 'meal' ? { path: `/recipe/${item.idMeal}` } : { path: `/cocktail/${item.idDrink}` }"
+          :item-id="item.type === 'meal' ? item.idMeal : item.idDrink"
+          :item-type="item.type"
+          :is-favorite="item.type === 'meal' ? isFavoriteMeal(item.idMeal) : isFavoriteCocktail(item.idDrink)"
+          :show-actions="true"
+          @toggle-favorite="handleToggleFavorite"
+          @share-item="handleShareItem"
+        />
+      </div>
+      <p v-else class="text-muted">You have no favorites yet. Start adding some recipes or cocktails!</p>
+    </section>
   </div>
 </template>
 
@@ -109,6 +134,13 @@
 import { ref, reactive, onMounted, computed, watch } from "vue";
 import { useSupabaseUser, useSupabaseClient, useAsyncData, navigateTo, useHead } from "#imports";
 import { useToast } from "vue-toastification";
+import ItemCard from "~/components/ItemCard.vue";
+import SkeletonCard from "~/components/SkeletonCard.vue";
+import ErrorMessage from "~/components/ErrorMessage.vue";
+import { useFavorites } from "~/composables/useFavorites";
+import { useMealApi } from "~/composables/useMealApi";
+import { useCocktailApi } from "~/composables/useCocktailApi";
+import { inject } from "vue";
 
 const user = useSupabaseUser();
 const client = useSupabaseClient();
@@ -245,6 +277,69 @@ const handleLogout = async () => {
 
 const handleAvatarUpload = async (event) => {
   toast.info("Avatar upload functionality is not yet implemented.");
+};
+
+const { favoriteMealIds, favoriteCocktailIds, isFavoriteMeal, isFavoriteCocktail, toggleMealFavorite, toggleCocktailFavorite, favoritesLoaded } = useFavorites();
+const { getRecipeById } = useMealApi();
+const { getCocktailById } = useCocktailApi();
+const openShareModal = inject("openShareModal");
+
+const favoritesError = ref("");
+const favoriteItems = ref([]);
+
+// Fetch favorite items details (meals and cocktails)
+const fetchFavoriteItems = async () => {
+  favoritesError.value = "";
+  favoriteItems.value = [];
+  try {
+    // Only fetch if loaded and there are favorites
+    if (!favoritesLoaded.value) return;
+    const mealIds = favoriteMealIds.value;
+    const cocktailIds = favoriteCocktailIds.value;
+    const mealPromises = mealIds.map((id) => getRecipeById(id));
+    const cocktailPromises = cocktailIds.map((id) => getCocktailById(id));
+    const [meals, cocktails] = await Promise.all([Promise.allSettled(mealPromises), Promise.allSettled(cocktailPromises)]);
+    // Filter out missing/deleted items
+    const mealResults = meals.filter((r) => r.status === "fulfilled" && r.value && r.value.idMeal).map((r) => ({ ...r.value, type: "meal" }));
+    const cocktailResults = cocktails.filter((r) => r.status === "fulfilled" && r.value && r.value.idDrink).map((r) => ({ ...r.value, type: "cocktail" }));
+    favoriteItems.value = [...mealResults, ...cocktailResults];
+  } catch (e) {
+    console.error("Error loading favorite items:", e);
+    favoritesError.value = "Failed to load your favorites. Please try again later.";
+  }
+};
+
+// Watch for changes in favoritesLoaded or favorite IDs
+watch(
+  [favoritesLoaded, favoriteMealIds, favoriteCocktailIds],
+  ([loaded]) => {
+    if (loaded) fetchFavoriteItems();
+  },
+  { immediate: true }
+);
+
+const handleToggleFavorite = ({ id, type }) => {
+  if (type === "meal") {
+    toggleMealFavorite(id);
+  } else if (type === "cocktail") {
+    toggleCocktailFavorite(id);
+  }
+  // Refetch after toggle
+  setTimeout(fetchFavoriteItems, 400); // Small delay for DB sync
+};
+
+const handleShareItem = ({ title, itemType, itemId }) => {
+  if (openShareModal) {
+    const shareUrl = itemType && itemId ? `${window.location.origin}/${itemType}/${itemId}` : window.location.href;
+    openShareModal({
+      title,
+      url: shareUrl,
+      text: itemType === "meal" ? `Check out this recipe: ${title}` : `Check out this cocktail: ${title}`,
+      type: itemType,
+    });
+  } else {
+    console.error("Share modal function not provided.");
+  }
 };
 
 definePageMeta({

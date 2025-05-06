@@ -128,14 +128,15 @@
         <div class="extras d-flex align-items-center">
           <!-- Dark Mode Toggle Button -->
           <button @click="toggleTheme" class="btn btn-sm btn-outline-secondary me-2 theme-toggle-btn rounded-circle" :aria-label="isDarkMode ? 'Activate light mode' : 'Activate dark mode'" title="Toggle light & dark theme">
-            <!-- Animated SVG Toggle (replace static icons) -->
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="theme-icon">
-              <mask id="moon-mask">
+            <!-- Animated SVG Toggle from Vue 3 Project -->
+            <svg class="sun-and-moon" aria-hidden="true" width="24" height="24" viewBox="0 0 24 24">
+              <mask class="moon" id="header-moon-mask">
+                <!-- Ensure unique ID if needed -->
                 <rect x="0" y="0" width="100%" height="100%" fill="white" />
-                <circle cx="12" cy="4" r="9" fill="black" />
+                <circle cx="24" cy="10" r="6" fill="black" />
               </mask>
-              <circle cx="12" cy="12" r="9" mask="url(#moon-mask)" fill="currentColor" />
-              <g stroke="currentColor">
+              <circle class="sun" cx="12" cy="12" r="6" mask="url(#header-moon-mask)" fill="currentColor" />
+              <g class="sun-beams" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="1" x2="12" y2="3" />
                 <line x1="12" y1="21" x2="12" y2="23" />
                 <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />

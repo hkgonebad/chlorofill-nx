@@ -178,12 +178,12 @@ const {
 );
 
 // --- Composables and State ---
-const { isFavorite: isCocktailFavorite, toggleCocktailFavorite } = useFavorites();
+const { isFavoriteCocktail, toggleCocktailFavorite } = useFavorites();
 const openShareModalFunc = inject("openShareModal");
 
 // Computed favorite status
 const isCurrentFavorite = computed(() => {
-  return cocktail.value ? isCocktailFavorite(cocktail.value.idDrink) : false;
+  return cocktail.value ? isFavoriteCocktail(cocktail.value.idDrink) : false;
 });
 
 // --- Ingredient Processing ---
@@ -210,8 +210,8 @@ const getIngredientImageUrl = (ingredientName) => {
 
 // --- Event Handlers ---
 const handleToggleFavorite = ({ id, type }) => {
-  if (type === "cocktail" && id) {
-    toggleCocktailFavorite(id); // Use the unified toggle function
+  if (cocktail.value && id === cocktail.value.idDrink) {
+    toggleCocktailFavorite(id);
   }
 };
 

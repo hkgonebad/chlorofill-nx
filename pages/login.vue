@@ -87,11 +87,22 @@ const handleLogin = async () => {
       // Assume it's a username, try to get email via RPC
       const { data: rpcData, error: rpcError } = await client.rpc("get_email_by_username", { p_username: identifier.value });
 
-      if (rpcError || !rpcData) {
-        console.error("RPC get_email_by_username error:", rpcError);
-        throw new Error(rpcError?.message || "Invalid username or unable to find email for username.");
+      // Remove this console log to avoid leaking information about existence of usernames
+      // console.log("RPC response:", rpcData);
+
+      if (rpcError) {
+        // Only log that an error occurred, not the details
+        console.error("RPC error occurred during login");
+        throw new Error("Invalid credentials. Please check and try again.");
       }
-      loginEmail = rpcData; // Use the email returned from RPC
+
+      // Check if username was found (new format returns {email, found})
+      if (!rpcData || !rpcData[0] || !rpcData[0].found) {
+        // Use the same generic error message regardless of whether username exists
+        throw new Error("Invalid credentials. Please check and try again.");
+      }
+
+      loginEmail = rpcData[0].email; // Use the email returned from RPC
     }
 
     const { error: signInError } = await client.auth.signInWithPassword({
@@ -99,15 +110,21 @@ const handleLogin = async () => {
       password: password.value,
     });
 
-    if (signInError) throw signInError;
+    if (signInError) {
+      // Log generic auth failure without exposing details
+      console.error("Authentication failed");
+      throw new Error("Invalid credentials. Please check and try again.");
+    }
 
     toast.success("Successfully logged in!");
     // Redirect to home page on success or intended page
     const redirectPath = useRoute().query.redirectTo || "/";
     navigateTo(redirectPath, { external: false });
   } catch (err) {
-    console.error("Login error:", err);
-    error.value = "Login failed. Please check your email/username and password.";
+    // Log generic error without exposing details
+    console.error("Login attempt failed");
+    // Always show generic error message regardless of error type
+    error.value = "Invalid credentials. Please check and try again.";
     toast.error(error.value);
   } finally {
     loading.value = false;

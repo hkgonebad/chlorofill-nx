@@ -1,9 +1,29 @@
+<!--
+  ItemCard.vue
+  - Card actions (favorites/share) are at bottom-right.
+  - Edit/Delete dropdown menu (three-dots) is at top-right, shown if showMenu && isOwner.
+  - Use showMenu, onEdit, onDelete, isOwner props to control dropdown.
+-->
 <template>
   <div class="col">
-    <div class="card item-card h-100 text-start shadow-sm" @click="navigateToDetail" style="cursor: pointer">
+    <div class="card item-card h-100 text-start shadow-sm" @click="navigateToDetail">
       <div class="card-image-wrapper position-relative">
         <img :src="imageUrl" class="card-img-top item-thumb" :alt="title" />
-        <div v-if="showActions" class="card-actions-overlay position-absolute top-0 end-0 p-2">
+        <!-- Dropdown menu for edit/delete -->
+        <div v-if="showMenu && isOwner" class="dropdown position-absolute top-0 end-0 m-2">
+          <button class="btn btn-sm btn-light rounded-circle action-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" @click.stop>
+            <i class="pi pi-ellipsis-v"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+              <a class="dropdown-item" @click.stop.prevent="onEdit && onEdit()"><i class="pi pi-pencil me-2"></i>Edit</a>
+            </li>
+            <li>
+              <a class="dropdown-item text-danger" @click.stop.prevent="onDelete && onDelete()"><i class="pi pi-trash me-2"></i>Delete</a>
+            </li>
+          </ul>
+        </div>
+        <div v-if="showActions" class="card-actions-overlay position-absolute bottom-0 end-0 p-2">
           <button
             v-if="itemId"
             @click.stop.prevent="toggleFavorite"
@@ -30,7 +50,6 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
 import { navigateTo } from "#imports";
 
 const props = defineProps({
@@ -68,6 +87,22 @@ const props = defineProps({
   showActions: {
     type: Boolean,
     default: true, // Show actions by default
+  },
+  showMenu: {
+    type: Boolean,
+    default: false,
+  },
+  onEdit: {
+    type: Function,
+    default: null,
+  },
+  onDelete: {
+    type: Function,
+    default: null,
+  },
+  isOwner: {
+    type: Boolean,
+    default: false,
   },
 });
 

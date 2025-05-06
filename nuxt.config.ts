@@ -72,7 +72,7 @@ export default defineNuxtConfig({
     redirectOptions: {
       login: "/login",
       callback: "/confirm", // Changed from /callback to /confirm for Supabase auth flow
-      exclude: ["/", "/about", "/categories/**", "/offers", "/cocktails/**", "/recipe/**", "/cocktail/**", "/areas/**", "/browse/**"],
+      exclude: ["/", "/login", "/signup", "/about", "/categories/**", "/offers", "/cocktails/**", "/recipe/**", "/cocktail/**", "/areas/**", "/browse/**"],
     },
     // Optional: Client options can be added here if needed
     // clientOptions: {

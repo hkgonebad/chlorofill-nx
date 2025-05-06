@@ -10,10 +10,10 @@
       <SkeletonCard v-for="n in skeletonCount" :key="'sk-' + n" />
     </div>
     <!-- Error State -->
-    <ErrorMessage v-else-if="error" :message="error?.message || 'Could not load favorites.'" />
+    <ErrorMessage v-else-if="error" :message="error?.message || error || 'Could not load favorites.'" />
 
     <!-- Combined List -->
-    <div v-else-if="allFavoritesDetails && allFavoritesDetails.length > 0" class="row row-cols-2 row-cols-md-4 g-4">
+    <div v-else-if="favoritesLoaded && allFavoritesDetails.length > 0" class="row row-cols-2 row-cols-md-4 g-4">
       <template v-for="item in allFavoritesDetails" :key="item.type + '-' + item.id">
         <ItemCard
           v-if="item.idMeal || item.idDrink"
@@ -29,13 +29,8 @@
       </template>
     </div>
     <!-- No Favorites State -->
-    <div v-else>
-      <p class="alert alert-info">
-        You haven't added any favorites yet.
-        <NuxtLink to="/browse" class="alert-link">Browse recipes & cocktails</NuxtLink>
-        <!-- Use NuxtLink -->
-        to find some!
-      </p>
+    <div v-else-if="!favoritesLoaded" class="row row-cols-2 row-cols-md-4 g-4 placeholder-glow">
+      <SkeletonCard v-for="n in skeletonCount" :key="'sk-' + n" />
     </div>
   </div>
 </template>
@@ -52,9 +47,9 @@ import { useCocktailApi } from "~/composables/useCocktailApi";
 import { useAsyncData, useHead } from "#imports";
 
 // Use the unified favorites composable
-const { favoriteMealIds, favoriteCocktailIds, toggleMealFavorite, toggleCocktailFavorite } = useFavorites();
+const { favoriteMealIds, favoriteCocktailIds, removeMealFavorite, removeCocktailFavorite, favoritesLoaded } = useFavorites();
 // const { getMealById } = useRecipeApi();
-const { getMealById } = useMealApi(); // Corrected usage
+const { getRecipeById } = useMealApi(); // Corrected usage
 const { getCocktailById } = useCocktailApi();
 
 // Compute skeleton count
@@ -84,7 +79,7 @@ const {
     try {
       // Fetch details concurrently
       const mealPromises = combinedMealIds.map(async (id) => {
-        const meal = await getMealById(id); // Corrected usage
+        const meal = await getRecipeById(id); // Corrected usage
         return meal ? { ...meal, type: "meal", id: meal.idMeal } : null; // Add type and common 'id'
       });
       const cocktailPromises = combinedCocktailIds.map(async (id) => {
@@ -136,12 +131,13 @@ const {
 const handleToggleFavorite = ({ id, type }) => {
   // In favorites view, toggle always means remove
   if (type === "meal") {
-    toggleMealFavorite(id);
+    removeMealFavorite(id);
   } else if (type === "cocktail") {
-    toggleCocktailFavorite(id);
+    removeCocktailFavorite(id);
   }
-  // Data will automatically refresh due to the watch in useAsyncData
-  // Alternatively, could call refresh() manually if needed
+  // Optimistically remove from UI for instant feedback
+  allFavoritesDetails.value = allFavoritesDetails.value.filter((item) => (type === "meal" && item.idMeal !== id) || (type === "cocktail" && item.idDrink !== id));
+  // Refetching is handled by the watch on combinedFavoriteIds
 };
 
 const handleShareItem = ({ title, url, type, itemId }) => {

@@ -8,11 +8,12 @@ const FAVORITES_COCKTAIL_KEY = "favoriteCocktailIds";
 const favoriteMealIds = ref([]);
 const favoriteCocktailIds = ref([]);
 const favoritesLoaded = ref(false);
+// Per-item loading state for toggling favorites
+const togglingFavorites = ref({}); // { 'meal-123': true, 'cocktail-456': false }
 
 // --- Load favorites from LocalStorage on client-side mount ---
 const loadFavorites = () => {
   if (typeof window === "undefined") return;
-  // ...load from localStorage...
   const storedMealFavorites = localStorage.getItem(FAVORITES_KEY);
   if (storedMealFavorites) {
     try {
@@ -27,6 +28,8 @@ const loadFavorites = () => {
       console.error("Error parsing meal favorites from LocalStorage:", error);
       localStorage.removeItem(FAVORITES_KEY);
     }
+  } else {
+    favoriteMealIds.value = [];
   }
 
   const storedCocktailFavorites = localStorage.getItem(FAVORITES_COCKTAIL_KEY);
@@ -43,8 +46,34 @@ const loadFavorites = () => {
       console.error("Error parsing cocktail favorites from LocalStorage:", error);
       localStorage.removeItem(FAVORITES_COCKTAIL_KEY);
     }
+  } else {
+    favoriteCocktailIds.value = [];
   }
   favoritesLoaded.value = true;
+};
+
+// --- Merge localStorage favorites into DB on login ---
+const mergeLocalFavoritesToDB = async (client, user) => {
+  if (!user || typeof window === "undefined") return;
+  const localMeals = JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]");
+  const localCocktails = JSON.parse(localStorage.getItem(FAVORITES_COCKTAIL_KEY) || "[]");
+  const upserts = [];
+  localMeals.forEach((id) => {
+    upserts.push({ user_id: user.id, item_id: id, item_type: "meal" });
+  });
+  localCocktails.forEach((id) => {
+    upserts.push({ user_id: user.id, item_id: id, item_type: "cocktail" });
+  });
+  if (upserts.length > 0) {
+    const { error } = await client.from("user_favorites").upsert(upserts, { onConflict: ["user_id", "item_id", "item_type"] });
+    if (error) {
+      console.error("Error merging local favorites to DB:", error);
+    } else {
+      // Clear localStorage after merging
+      localStorage.removeItem(FAVORITES_KEY);
+      localStorage.removeItem(FAVORITES_COCKTAIL_KEY);
+    }
+  }
 };
 
 export function useFavorites() {
@@ -59,7 +88,6 @@ export function useFavorites() {
       console.error("Error fetching user favorites from DB:", error);
       return;
     }
-    // Split into meals and cocktails
     favoriteMealIds.value = data.filter((f) => f.item_type === "meal").map((f) => f.item_id);
     favoriteCocktailIds.value = data.filter((f) => f.item_type === "cocktail").map((f) => f.item_id);
     favoritesLoaded.value = true;
@@ -87,17 +115,23 @@ export function useFavorites() {
 
   onMounted(async () => {
     if (user.value) {
+      await mergeLocalFavoritesToDB(client, user.value);
       await fetchUserFavorites();
     } else {
       loadFavorites();
     }
   });
 
-  // Watch for login/logout and sync favorites
+  // Watch for login/logout and sync/merge favorites
   watch(user, async (newUser, oldUser) => {
     if (newUser && !favoritesLoaded.value) {
+      await mergeLocalFavoritesToDB(client, newUser);
       await fetchUserFavorites();
     } else if (!newUser) {
+      // On logout, clear in-memory and reload from localStorage
+      favoriteMealIds.value = [];
+      favoriteCocktailIds.value = [];
+      favoritesLoaded.value = false;
       loadFavorites();
     }
   });
@@ -123,41 +157,59 @@ export function useFavorites() {
   // --- Methods to interact with favorites (using unified toggle approach) ---
   const toggleMealFavorite = async (mealId) => {
     if (!mealId) return;
-    const index = favoriteMealIds.value.indexOf(mealId);
-    if (user.value) {
-      if (index > -1) {
-        favoriteMealIds.value.splice(index, 1);
-        await removeUserFavorite(mealId, "meal");
+    const key = `meal-${mealId}`;
+    if (togglingFavorites.value[key]) return; // Prevent race
+    togglingFavorites.value[key] = true;
+    try {
+      const index = favoriteMealIds.value.indexOf(mealId);
+      if (user.value) {
+        if (index > -1) {
+          favoriteMealIds.value.splice(index, 1);
+          await removeUserFavorite(mealId, "meal");
+        } else {
+          favoriteMealIds.value.push(mealId);
+          await addUserFavorite(mealId, "meal");
+        }
       } else {
-        favoriteMealIds.value.push(mealId);
-        await addUserFavorite(mealId, "meal");
+        if (index > -1) {
+          favoriteMealIds.value.splice(index, 1);
+        } else {
+          favoriteMealIds.value.push(mealId);
+        }
       }
-    } else {
-      if (index > -1) {
-        favoriteMealIds.value.splice(index, 1);
-      } else {
-        favoriteMealIds.value.push(mealId);
-      }
+    } catch (e) {
+      console.error("Error toggling meal favorite:", e);
+    } finally {
+      togglingFavorites.value[key] = false;
     }
   };
 
   const toggleCocktailFavorite = async (cocktailId) => {
     if (!cocktailId) return;
-    const index = favoriteCocktailIds.value.indexOf(cocktailId);
-    if (user.value) {
-      if (index > -1) {
-        favoriteCocktailIds.value.splice(index, 1);
-        await removeUserFavorite(cocktailId, "cocktail");
+    const key = `cocktail-${cocktailId}`;
+    if (togglingFavorites.value[key]) return; // Prevent race
+    togglingFavorites.value[key] = true;
+    try {
+      const index = favoriteCocktailIds.value.indexOf(cocktailId);
+      if (user.value) {
+        if (index > -1) {
+          favoriteCocktailIds.value.splice(index, 1);
+          await removeUserFavorite(cocktailId, "cocktail");
+        } else {
+          favoriteCocktailIds.value.push(cocktailId);
+          await addUserFavorite(cocktailId, "cocktail");
+        }
       } else {
-        favoriteCocktailIds.value.push(cocktailId);
-        await addUserFavorite(cocktailId, "cocktail");
+        if (index > -1) {
+          favoriteCocktailIds.value.splice(index, 1);
+        } else {
+          favoriteCocktailIds.value.push(cocktailId);
+        }
       }
-    } else {
-      if (index > -1) {
-        favoriteCocktailIds.value.splice(index, 1);
-      } else {
-        favoriteCocktailIds.value.push(cocktailId);
-      }
+    } catch (e) {
+      console.error("Error toggling cocktail favorite:", e);
+    } finally {
+      togglingFavorites.value[key] = false;
     }
   };
 
@@ -181,6 +233,7 @@ export function useFavorites() {
     return favoriteCocktailIds.value.includes(cocktailId);
   };
 
+  // --- SSR/hydration safety: expose favoritesLoaded and togglingFavorites ---
   return {
     favoriteMealIds,
     favoriteCocktailIds,
@@ -194,7 +247,7 @@ export function useFavorites() {
     fetchUserFavorites,
     addUserFavorite,
     removeUserFavorite,
-    // Combine isFavorite for potential generic use (if needed later)
+    togglingFavorites,
     isFavorite: (id, type) => (type === "meal" ? isFavoriteMeal(id) : isFavoriteCocktail(id)),
   };
 }

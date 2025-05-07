@@ -61,8 +61,8 @@ export default defineNuxtConfig({
   // Environment variables accessible via useRuntimeConfig()
   runtimeConfig: {
     public: {
-      supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_URL || "",
-      supabaseKey: process.env.NUXT_PUBLIC_SUPABASE_KEY || "",
+      supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_U || "",
+      supabaseKey: process.env.NUXT_PUBLIC_SUPABASE_K || "",
     },
   },
 

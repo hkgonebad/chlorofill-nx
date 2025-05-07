@@ -25,7 +25,7 @@
           :link-to="{ path: `/recipe/${recipe.idMeal}` }"
           :item-id="recipe.idMeal"
           item-type="meal"
-          :is-favorite="isFavorite(recipe.idMeal)"
+          :is-favorite="isFavoriteMeal(recipe.idMeal)"
           @toggle-favorite="handleToggleFavorite"
           @share-item="handleShare"
         />
@@ -65,7 +65,7 @@ const openShareModal = inject("openShareModal");
 const { getRecipesByCategory } = useMealApi();
 
 // Use Favorites composable
-const { isFavorite, addFavorite, removeFavorite } = useFavorites();
+const { isFavoriteMeal, toggleMealFavorite } = useFavorites();
 
 // Fetch data using useAsyncData for SSR compatibility
 const {
@@ -83,10 +83,10 @@ const {
 
 // Handler for toggling favorite status
 const handleToggleFavorite = (payload) => {
-  if (isFavorite(payload.id)) {
-    removeFavorite(payload.id);
-  } else {
-    addFavorite(payload.id);
+  // payload is { id: itemId, type: itemType } from ItemCard
+  // Since this is the meal category page, type will be 'meal'
+  if (payload.type === "meal" && payload.id) {
+    toggleMealFavorite(payload.id);
   }
 };
 

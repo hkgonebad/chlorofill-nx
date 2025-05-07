@@ -174,12 +174,12 @@ const {
 );
 
 // --- Composables and State ---
-const { isFavorite: isMealFavorite, toggleMealFavorite } = useFavorites();
+const { isFavoriteMeal, toggleMealFavorite } = useFavorites();
 const openShareModalFunc = inject("openShareModal");
 
 // Computed favorite status
 const isCurrentFavorite = computed(() => {
-  return recipe.value ? isMealFavorite(recipe.value.idMeal) : false;
+  return recipe.value ? isFavoriteMeal(recipe.value.idMeal) : false;
 });
 
 // --- Ingredient Processing ---
@@ -204,8 +204,8 @@ const getIngredientImageUrl = (ingredientName) => {
 
 // --- Event Handlers ---
 const handleToggleFavorite = ({ id, type }) => {
-  if (type === "meal" && id) {
-    toggleMealFavorite(id); // Use the unified toggle function
+  if (recipe.value && id === recipe.value.idMeal) {
+    toggleMealFavorite(id);
   }
 };
 

@@ -148,20 +148,17 @@
           <ErrorMessage v-else-if="creationsError" :message="creationsError" />
           <div v-else>
             <div class="mb-3 text-end">
-              <button class="btn btn-success" @click="navigateTo('/creations/new')"><i class="bi bi-plus-lg me-1"></i> Create New</button>
+              <button class="btn btn-success me-2" @click="navigateTo('/creations/new')"><i class="bi bi-plus-lg me-1"></i> Create New</button>
+              <button class="btn btn-outline-primary" @click="navigateTo('/creations/my-creations')">Manage All</button>
             </div>
             <div v-if="userCreations.length > 0" class="row row-cols-1 row-cols-md-3 g-4">
-              <div v-for="creation in userCreations" :key="creation.id" class="col">
+              <div v-for="creation in userCreations.slice(0, 3)" :key="creation.id" class="col">
                 <div class="card h-100">
                   <img v-if="creation.image_path" :src="creation.image_path" class="card-img-top" alt="Recipe Image" />
                   <div class="card-body">
                     <h5 class="card-title">{{ creation.title }}</h5>
                     <p class="card-text text-muted small mb-2">{{ creation.type === "cocktail" ? "Cocktail" : "Recipe" }}</p>
                     <p class="card-text">{{ creation.description }}</p>
-                  </div>
-                  <div class="card-footer d-flex justify-content-between align-items-center">
-                    <button class="btn btn-outline-primary btn-sm" @click="navigateTo(`/creations/${creation.id}`)"><i class="bi bi-pencil"></i> Edit</button>
-                    <button class="btn btn-outline-danger btn-sm" @click="handleDeleteCreation(creation.id)"><i class="bi bi-trash"></i> Delete</button>
                   </div>
                 </div>
               </div>

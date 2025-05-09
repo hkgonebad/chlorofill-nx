@@ -1,6 +1,6 @@
 <template>
   <div class="container py-5">
-    <h2 class="sectionTitle mb-4">Edit Recipe or Cocktail</h2>
+    <h2 class="sectionTitle mb-4">Edit: {{ creation?.title || "Recipe or Cocktail" }}</h2>
     <div v-if="loading" class="text-center py-5">
       <div class="spinner-border" role="status">
         <span class="visually-hidden">Loading...</span>
@@ -8,7 +8,7 @@
     </div>
     <div v-else-if="error" class="alert alert-danger">{{ error }}</div>
     <div v-else>
-      <UserCreationForm :model="creation" mode="edit" :loading="saving" @submit="handleSubmit" />
+      <UserCreationMultiStepForm :model="creation" mode="edit" :loading="saving" @submit="handleSubmit" />
     </div>
   </div>
 </template>
@@ -18,7 +18,7 @@ import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import { useUserCreations } from "~/composables/useUserCreations";
-import UserCreationForm from "~/components/UserCreationForm.vue";
+import UserCreationMultiStepForm from "~/components/UserCreationMultiStepForm.vue";
 
 const { creations, fetchUserCreations, updateUserCreation } = useUserCreations();
 const route = useRoute();

@@ -51,7 +51,7 @@
     <div v-else-if="recipe" class="recipe-content">
       <!-- Image Header -->
       <div class="image-header position-relative mb-3">
-        <img :src="recipe.strMealThumb + '/large'" class="img-fluid recipe-image" :alt="recipe.strMeal" />
+        <img :src="displayImage" class="img-fluid recipe-image" :alt="displayTitle" />
       </div>
 
       <div class="container recipe-body px-4 py-2">
@@ -59,7 +59,7 @@
         <div class="d-flex align-items-center mb-4 view-header">
           <BackButton class="btn btn-light btn-sm rounded-circle me-3 back-button-icon" />
           <h2 class="mb-0 flex-grow-1 section-title">
-            {{ recipe.strMeal }}
+            {{ displayTitle }}
           </h2>
           <!-- Share Icon Button -->
           <button @click="openShareModal" class="btn btn-sm btn-light rounded-circle ms-3 action-icon" title="Share Recipe" aria-label="Share Recipe">
@@ -78,30 +78,41 @@
 
         <!-- Meta Info -->
         <p class="text-muted small mb-3">
-          <span v-if="recipe.strCategory"
-            >Category:
-            <!-- Use NuxtLink for internal navigation -->
-            <NuxtLink :to="{ path: `/category/${recipe.strCategory}` }">
+          <span v-if="recipe.strCategory">
+            Category:
+            <template v-if="recipe.strCategory !== 'User Recipe' && recipe.strCategory !== 'User Creation'">
+              <NuxtLink :to="{ path: `/category/${recipe.strCategory}` }">
+                {{ recipe.strCategory }}
+              </NuxtLink>
+            </template>
+            <template v-else>
               {{ recipe.strCategory }}
-            </NuxtLink>
+            </template>
           </span>
-          <span v-if="recipe.strArea">
+          <span v-if="recipe.strArea && recipe.strArea !== 'N/A'">
             | Area:
-            <!-- Use NuxtLink for internal navigation -->
             <NuxtLink :to="{ path: `/areas/${recipe.strArea}` }">
               {{ recipe.strArea }}
             </NuxtLink>
           </span>
         </p>
         <!-- Affiliate Link for Category/Area -->
-        <p class="small affiliate-links">
-          <a v-if="recipe.strCategory" :href="getAmazonSearchUrl(recipe.strCategory + ' cookbook')" target="_blank" rel="noopener noreferrer nofollow" class="me-2 affiliate-link">
+        <p class="small affiliate-links" v-if="(recipe.strCategory && recipe.strCategory !== 'User Recipe' && recipe.strCategory !== 'User Creation') || (recipe.strArea && recipe.strArea !== 'N/A')">
+          <a
+            v-if="recipe.strCategory && recipe.strCategory !== 'User Recipe' && recipe.strCategory !== 'User Creation'"
+            :href="getAmazonSearchUrl(recipe.strCategory + ' cookbook')"
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            class="me-2 affiliate-link"
+          >
             <i class="pi pi-amazon"></i> Shop {{ recipe.strCategory }} Cookbooks
           </a>
-          <a v-if="recipe.strArea" :href="getAmazonSearchUrl(recipe.strArea + ' cuisine')" target="_blank" rel="noopener noreferrer nofollow" class="affiliate-link"> <i class="pi pi-amazon"></i> Shop {{ recipe.strArea }} Cuisine </a>
+          <a v-if="recipe.strArea && recipe.strArea !== 'N/A'" :href="getAmazonSearchUrl(recipe.strArea + ' cuisine')" target="_blank" rel="noopener noreferrer nofollow" class="affiliate-link">
+            <i class="pi pi-amazon"></i> Shop {{ recipe.strArea }} Cuisine
+          </a>
         </p>
-        <p v-if="recipe.strTags" class="mb-3">
-          <span class="badge bg-secondary me-1" v-for="tag in recipe.strTags.split(',')" :key="tag">{{ tag.trim() }}</span>
+        <p v-if="displayTags.length > 0" class="mb-3">
+          <span class="badge bg-secondary me-1" v-for="tag in displayTags" :key="tag">{{ tag }}</span>
         </p>
 
         <!-- Ingredients -->
@@ -123,7 +134,7 @@
         <!-- Instructions -->
         <h5 class="mt-4">Instructions</h5>
         <p class="instructions-text">
-          {{ recipe.strInstructions }}
+          {{ displayDescription }}
         </p>
 
         <!-- Source/Video Links -->
@@ -262,6 +273,25 @@ useHead(() => {
     link: [{ rel: "canonical", href: pageUrl }],
   };
 });
+
+// Helper: check if ID is UUID (UGC)
+const isUuid = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+
+const getRecipeImageUrl = computed(() => {
+  if (!recipe.value) return "";
+  // If UGC (UUID), do not append /large
+  if (isUuid(recipeId.value)) {
+    return recipe.value.strMealThumb || "/img/no-recipe.jpg";
+  }
+  // API: append /large
+  return recipe.value.strMealThumb + "/large";
+});
+
+// --- UGC Field Mapping ---
+const displayTitle = computed(() => recipe.value?.strMeal || "");
+const displayDescription = computed(() => recipe.value?.strInstructions || "");
+const displayTags = computed(() => recipe.value?.strTags?.split(",").map((t) => t.trim()) || []);
+const displayImage = getRecipeImageUrl;
 </script>
 
 <style scoped lang="scss">

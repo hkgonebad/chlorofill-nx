@@ -120,7 +120,7 @@
         <ul class="list-unstyled ingredients-list mb-4">
           <li class="d-flex align-items-center mb-2" v-for="(ingredient, index) in ingredientsAndMeasures" :key="index">
             <!-- Ingredient Thumbnail -->
-            <img :src="getIngredientImageUrl(ingredient.name)" :alt="ingredient.name" class="ingredient-thumbnail me-2" loading="lazy" @error="($event) => ($event.target.style.display = 'none')" />
+            <img :src="ingredient.imageUrl" :alt="ingredient.name" class="ingredient-thumbnail me-2" loading="lazy" @error="($event) => ($event.target.style.display = 'none')" />
             <div class="flex-grow-1">
               <!-- Affiliate link for ingredient -->
               <a :href="getAmazonSearchUrl(ingredient.name)" target="_blank" rel="noopener noreferrer nofollow" class="affiliate-link">{{ ingredient.name }}</a>
@@ -165,8 +165,11 @@ import { getAmazonSearchUrl } from "~/utils/affiliateLinks";
 
 // Get route and API composable
 const route = useRoute();
-const { getRecipeById } = useMealApi(); // Renamed from getMealDetailsById
+const { getRecipeById } = useMealApi();
 const recipeId = computed(() => route.params.id);
+
+// Helper: check if ID is UUID (UGC) - DEFINED ONCE HERE
+const isUuid = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
 
 // --- Data Fetching with useAsyncData ---
 const {
@@ -177,6 +180,7 @@ const {
   `recipe-${recipeId.value}`,
   () => {
     if (!recipeId.value) return null;
+    // Assuming getRecipeById can fetch both API and UGC (which might have a different structure for ingredients)
     return getRecipeById(recipeId.value);
   },
   {
@@ -197,21 +201,33 @@ const isCurrentFavorite = computed(() => {
 const ingredientsAndMeasures = computed(() => {
   if (!recipe.value) return [];
   const list = [];
-  for (let i = 1; i <= 20; i++) {
-    const ingredient = recipe.value[`strIngredient${i}`];
-    const measure = recipe.value[`strMeasure${i}`];
-    if (ingredient && ingredient.trim() !== "") {
-      list.push({ name: ingredient.trim(), measure: measure ? measure.trim() : "" });
+  const isUgcRecipe = isUuid(recipeId.value); // Use the defined isUuid
+
+  if (isUgcRecipe && recipe.value.ingredients && Array.isArray(recipe.value.ingredients)) {
+    // UGC items store ingredients in an array of objects
+    recipe.value.ingredients.forEach((ing) => {
+      list.push({
+        name: ing.name,
+        measure: `${ing.amount || ""} ${ing.unit || ""}`.trim(),
+        imageUrl: ing.image_url || `https://www.themealdb.com/images/ingredients/${encodeURIComponent(ing.name.trim().replace(/ /g, "_"))}-Small.png`, // Fallback to MealDB if UGC image missing
+      });
+    });
+  } else if (!isUgcRecipe) {
+    // API items store ingredients in strIngredientX and strMeasureX
+    for (let i = 1; i <= 20; i++) {
+      const ingredientName = recipe.value[`strIngredient${i}`];
+      const measure = recipe.value[`strMeasure${i}`];
+      if (ingredientName && ingredientName.trim() !== "") {
+        list.push({
+          name: ingredientName.trim(),
+          measure: measure ? measure.trim() : "",
+          imageUrl: `https://www.themealdb.com/images/ingredients/${encodeURIComponent(ingredientName.trim().replace(/ /g, "_"))}-Small.png`,
+        });
+      }
     }
   }
   return list;
 });
-
-const getIngredientImageUrl = (ingredientName) => {
-  if (!ingredientName) return "";
-  const formattedName = encodeURIComponent(ingredientName.trim().replace(/ /g, "_"));
-  return `https://www.themealdb.com/images/ingredients/${formattedName}-Small.png`;
-};
 
 // --- Event Handlers ---
 const handleToggleFavorite = ({ id, type }) => {
@@ -274,23 +290,24 @@ useHead(() => {
   };
 });
 
-// Helper: check if ID is UUID (UGC)
-const isUuid = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
-
 const getRecipeImageUrl = computed(() => {
   if (!recipe.value) return "";
-  // If UGC (UUID), do not append /large
+  // For UGC, image_path should be the full Supabase URL
   if (isUuid(recipeId.value)) {
-    return recipe.value.strMealThumb || "/img/no-recipe.jpg";
+    return recipe.value.image_path || recipe.value.strMealThumb || "/img/no-recipe.jpg"; // Prefer image_path if available for UGC
   }
-  // API: append /large
-  return recipe.value.strMealThumb + "/large";
+  // API: append /large to strMealThumb
+  return recipe.value.strMealThumb ? recipe.value.strMealThumb + "/large" : "/img/no-recipe.jpg";
 });
 
 // --- UGC Field Mapping ---
-const displayTitle = computed(() => recipe.value?.strMeal || "");
-const displayDescription = computed(() => recipe.value?.strInstructions || "");
-const displayTags = computed(() => recipe.value?.strTags?.split(",").map((t) => t.trim()) || []);
+const displayTitle = computed(() => recipe.value?.title || recipe.value?.strMeal || ""); // Use .title for UGC, .strMeal for API
+const displayDescription = computed(() => recipe.value?.description || recipe.value?.strInstructions || "");
+const displayTags = computed(() => {
+  if (recipe.value?.tags && Array.isArray(recipe.value.tags)) return recipe.value.tags; // UGC tags are array
+  if (recipe.value?.strTags) return recipe.value.strTags.split(",").map((t) => t.trim()); // API tags are string
+  return [];
+});
 const displayImage = getRecipeImageUrl;
 </script>
 

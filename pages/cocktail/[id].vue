@@ -118,7 +118,7 @@
         <ul class="list-unstyled ingredients-list mb-4">
           <li class="d-flex align-items-center mb-2" v-for="(ingredient, index) in ingredientsList" :key="index">
             <!-- Ingredient Thumbnail -->
-            <img :src="getIngredientImageUrl(ingredient.name)" :alt="ingredient.name" class="ingredient-thumbnail me-2" loading="lazy" @error="($event) => ($event.target.style.display = 'none')" />
+            <img :src="ingredient.imageUrl" :alt="ingredient.name" class="ingredient-thumbnail me-2" loading="lazy" @error="($event) => ($event.target.style.display = 'none')" />
             <div class="flex-grow-1">
               <!-- Affiliate link for ingredient - Use getAmazonSearchUrl -->
               <a :href="getAmazonSearchUrl(ingredient.name)" target="_blank" rel="noopener noreferrer nofollow" class="affiliate-link">{{ ingredient.name }}</a>
@@ -166,7 +166,9 @@ const route = useRoute();
 const { getCocktailById } = useCocktailApi();
 const cocktailId = computed(() => route.params.id);
 
-// --- Data Fetching with useAsyncData ---
+// Helper: check if ID is UUID (UGC)
+const isUuid = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+
 const {
   data: cocktail,
   pending,
@@ -175,10 +177,11 @@ const {
   `cocktail-${cocktailId.value}`,
   () => {
     if (!cocktailId.value) return null;
+    // getCocktailById should be able to fetch both API and UGC cocktails
     return getCocktailById(cocktailId.value);
   },
   {
-    watch: [cocktailId], // Refetch if ID changes
+    watch: [cocktailId],
   }
 );
 
@@ -186,46 +189,56 @@ const {
 const { isFavoriteCocktail, toggleCocktailFavorite } = useFavorites();
 const openShareModalFunc = inject("openShareModal");
 
-// Computed favorite status
 const isCurrentFavorite = computed(() => {
-  return cocktail.value ? isFavoriteCocktail(cocktail.value.idDrink) : false;
+  // For UGC, ID might be in `cocktail.value.id` instead of `idDrink`
+  const idToCheck = isUuid(cocktailId.value) ? cocktailId.value : cocktail.value?.idDrink;
+  return idToCheck ? isFavoriteCocktail(idToCheck) : false;
 });
 
-// --- Ingredient Processing ---
 const ingredientsList = computed(() => {
   if (!cocktail.value) return [];
   const list = [];
-  for (let i = 1; i <= 15; i++) {
-    // Cocktails use up to 15 ingredients
-    const ingredient = cocktail.value[`strIngredient${i}`];
-    const measure = cocktail.value[`strMeasure${i}`];
-    if (ingredient && ingredient.trim() !== "") {
-      list.push({ name: ingredient.trim(), measure: measure ? measure.trim() : "" });
+  const isUgcCocktail = isUuid(cocktailId.value);
+
+  if (isUgcCocktail && cocktail.value.ingredients && Array.isArray(cocktail.value.ingredients)) {
+    cocktail.value.ingredients.forEach((ing) => {
+      list.push({
+        name: ing.name,
+        measure: `${ing.amount || ""} ${ing.unit || ""}`.trim(),
+        imageUrl: ing.image_url || `https://www.thecocktaildb.com/images/ingredients/${encodeURIComponent(ing.name.trim().replace(/ /g, "_"))}-Small.png`,
+      });
+    });
+  } else if (!isUgcCocktail) {
+    for (let i = 1; i <= 15; i++) {
+      const ingredientName = cocktail.value[`strIngredient${i}`];
+      const measure = cocktail.value[`strMeasure${i}`];
+      if (ingredientName && ingredientName.trim() !== "") {
+        list.push({
+          name: ingredientName.trim(),
+          measure: measure ? measure.trim() : "",
+          imageUrl: `https://www.thecocktaildb.com/images/ingredients/${encodeURIComponent(ingredientName.trim().replace(/ /g, "_"))}-Small.png`,
+        });
+      }
     }
   }
   return list;
 });
 
-const getIngredientImageUrl = (ingredientName) => {
-  if (!ingredientName) return "";
-  const formattedName = encodeURIComponent(ingredientName.trim().replace(/ /g, "_"));
-  // CocktailDB image URL format
-  return `https://www.thecocktaildb.com/images/ingredients/${formattedName}-Small.png`;
-};
-
-// --- Event Handlers ---
 const handleToggleFavorite = ({ id, type }) => {
-  if (cocktail.value && id === cocktail.value.idDrink) {
-    toggleCocktailFavorite(id);
+  // For UGC, the ID might be different from idDrink/idMeal
+  const currentId = isUuid(cocktailId.value) ? cocktailId.value : cocktail.value?.idDrink;
+  if (currentId && id === currentId) {
+    toggleCocktailFavorite(id); // toggleCocktailFavorite should handle UUIDs if it supports UGC favorites
   }
 };
 
 const openShareModal = () => {
   if (openShareModalFunc && cocktail.value) {
+    const titleToShare = isUuid(cocktailId.value) ? cocktail.value.title : cocktail.value.strDrink;
     openShareModalFunc({
-      title: cocktail.value.strDrink,
-      url: window.location.href, // Use current URL
-      text: `Check out this cocktail: ${cocktail.value.strDrink}`,
+      title: titleToShare,
+      url: window.location.href,
+      text: `Check out this cocktail: ${titleToShare}`,
       type: "cocktail",
     });
   } else {
@@ -235,57 +248,61 @@ const openShareModal = () => {
 
 // --- Head Management (Dynamic Meta Tags) ---
 useHead(() => {
-  // Default values if cocktail hasn't loaded
   if (!cocktail.value) {
-    return {
-      title: "Loading Cocktail... | ChloroFill 🍴🍹",
-    };
+    return { title: "Loading Cocktail... | ChloroFill 🍴🍹" };
   }
-
-  // Dynamic values
-  const pageTitle = `${cocktail.value.strDrink} | ChloroFill 🍴🍹`;
-  const description = cocktail.value.strInstructions ? cocktail.value.strInstructions.substring(0, 160) + "..." : `Learn how to make a ${cocktail.value.strDrink}. Find ingredients and instructions on ChloroFill.`;
-  const imageUrl = cocktail.value.strDrinkThumb || "https://chlorofill.vercel.app/img/og-default.jpg";
+  const title = isUuid(cocktailId.value) ? cocktail.value.title : cocktail.value.strDrink;
+  const descriptionContent = (isUuid(cocktailId.value) ? cocktail.value.description : cocktail.value.strInstructions) || `Learn how to make a ${title}.`;
+  const metaDescription = descriptionContent.substring(0, 160) + (descriptionContent.length > 160 ? "..." : "");
+  const image = (isUuid(cocktailId.value) ? cocktail.value.image_path : cocktail.value.strDrinkThumb) || "https://chlorofill.vercel.app/img/og-default.jpg";
   const pageUrl = typeof window !== "undefined" ? window.location.href : `https://chlorofill.vercel.app/cocktail/${cocktailId.value}`;
 
   return {
-    title: pageTitle,
+    title: `${title} | ChloroFill 🍴🍹`,
     meta: [
-      { key: "description", name: "description", content: description },
-      // Open Graph
-      { key: "og:title", property: "og:title", content: pageTitle },
-      { key: "og:description", property: "og:description", content: description },
-      { key: "og:image", property: "og:image", content: imageUrl },
+      { key: "description", name: "description", content: metaDescription },
+      { key: "og:title", property: "og:title", content: title },
+      { key: "og:description", property: "og:description", content: metaDescription },
+      { key: "og:image", property: "og:image", content: image },
       { key: "og:url", property: "og:url", content: pageUrl },
-      { key: "og:type", property: "og:type", content: "article" }, // Treat as article
-      // Twitter Card
+      { key: "og:type", property: "og:type", content: "article" },
       { key: "twitter:card", name: "twitter:card", content: "summary_large_image" },
-      { key: "twitter:title", name: "twitter:title", content: pageTitle },
-      { key: "twitter:description", name: "twitter:description", content: description },
-      { key: "twitter:image", name: "twitter:image", content: imageUrl },
+      { key: "twitter:title", name: "twitter:title", content: title },
+      { key: "twitter:description", name: "twitter:description", content: metaDescription },
+      { key: "twitter:image", name: "twitter:image", content: image },
     ],
     link: [{ rel: "canonical", href: pageUrl }],
   };
 });
 
-// Helper: check if ID is UUID (UGC)
-const isUuid = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
-
 // --- UGC Field Mapping ---
-const displayTitle = computed(() => cocktail.value?.strDrink || "");
-const displayDescription = computed(() => cocktail.value?.strInstructions || "");
-const displayTags = computed(() => cocktail.value?.strTags?.split(",").map((t) => t.trim()) || []);
-const displayImage = getCocktailImageUrl;
+const displayTitle = computed(() => {
+  if (!cocktail.value) return "";
+  return isUuid(cocktailId.value) ? cocktail.value.title : cocktail.value.strDrink;
+});
+const displayDescription = computed(() => {
+  if (!cocktail.value) return "";
+  return isUuid(cocktailId.value) ? cocktail.value.description : cocktail.value.strInstructions;
+});
+const displayTags = computed(() => {
+  if (!cocktail.value) return [];
+  if (isUuid(cocktailId.value) && cocktail.value.tags && Array.isArray(cocktail.value.tags)) {
+    return cocktail.value.tags;
+  }
+  if (!isUuid(cocktailId.value) && cocktail.value.strTags) {
+    return cocktail.value.strTags.split(",").map((t) => t.trim());
+  }
+  return [];
+});
 
 const getCocktailImageUrl = computed(() => {
-  if (!cocktail.value) return "";
-  // If UGC (UUID), do not append /large
+  if (!cocktail.value) return "/img/no-recipe.jpg";
   if (isUuid(cocktailId.value)) {
-    return cocktail.value.strDrinkThumb || "/img/no-recipe.jpg";
+    return cocktail.value.image_path || cocktail.value.strDrinkThumb || "/img/no-recipe.jpg";
   }
-  // API: append /large
-  return cocktail.value.strDrinkThumb + "/large";
+  return cocktail.value.strDrinkThumb ? cocktail.value.strDrinkThumb + "/large" : "/img/no-recipe.jpg";
 });
+const displayImage = getCocktailImageUrl;
 </script>
 
 <style scoped lang="scss">

@@ -1,6 +1,5 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: "2024-11-01",
   devtools: { enabled: true },
 
   // Modules
@@ -61,8 +60,8 @@ export default defineNuxtConfig({
   // Environment variables accessible via useRuntimeConfig()
   runtimeConfig: {
     public: {
-      supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_U || "",
-      supabaseKey: process.env.NUXT_PUBLIC_SUPABASE_K || "",
+      supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_URL || "",
+      supabaseKey: process.env.NUXT_PUBLIC_SUPABASE_KEY || "",
     },
   },
 

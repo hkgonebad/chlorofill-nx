@@ -1,74 +1,119 @@
 <template>
   <div class="profileView container py-5">
-    <h2 class="sectionTitle mb-4">My Profile</h2>
+    <h2 class="sectionTitle mb-4 d-flex justify-content-between">
+      <span>My Profile</span>
+      <NuxtLink to="/creations/my-creations" class="btn btn-primary btn-sm"> <i class="pi pi-pencil me-1"></i> My Creations </NuxtLink>
+    </h2>
 
     <!-- Tabs Navigation -->
     <ul class="nav nav-tabs profileTabs mb-4" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" :class="{ active: activeTab === 'favorites' }" @click="activeTab = 'favorites'" type="button" role="tab">Favorites</button>
+      </li>
       <li class="nav-item" role="presentation">
         <button class="nav-link" :class="{ active: activeTab === 'account' }" @click="activeTab = 'account'" type="button" role="tab">Account Info</button>
       </li>
       <li class="nav-item" role="presentation">
         <button class="nav-link" :class="{ active: activeTab === 'security' }" @click="activeTab = 'security'" type="button" role="tab">Security</button>
       </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" :class="{ active: activeTab === 'favorites' }" @click="activeTab = 'favorites'" type="button" role="tab">Favorites</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" :class="{ active: activeTab === 'creations' }" @click="activeTab = 'creations'" type="button" role="tab">Your Recipes & Cocktails</button>
-      </li>
     </ul>
 
     <!-- Tab Panes -->
     <div class="tab-content profileTabContent">
+      <!-- Favorites Tab -->
+      <div class="tab-pane fade" :class="{ show: activeTab === 'favorites', active: activeTab === 'favorites' }" role="tabpanel">
+        <section class="favoritesSection mt-4">
+          <h3 class="sectionTitle mb-4">Your Favorites</h3>
+          <div v-if="!favoritesLoaded" class="row row-cols-2 row-cols-md-4 g-4 placeholder-glow">
+            <SkeletonCard v-for="n in 4" :key="'sk-fav-' + n" />
+          </div>
+          <ErrorMessage v-else-if="favoritesError" :message="favoritesError" />
+          <div v-else-if="favoriteItems.length > 0" class="row row-cols-2 row-cols-md-4 g-4">
+            <ItemCard
+              v-for="item in favoriteItems"
+              :key="item.type + '-' + (item.idMeal || item.idDrink || item.id)"
+              :image-url="item.image_path || (item.type === 'meal' ? item.strMealThumb : item.strDrinkThumb) || '/img/no-recipe.jpg'"
+              :title="item.title || (item.type === 'meal' ? item.strMeal : item.strDrink)"
+              :link-to="item.type === 'meal' ? { path: `/recipe/${item.idMeal || item.id}` } : { path: `/cocktail/${item.idDrink || item.id}` }"
+              :item-id="item.idMeal || item.idDrink || item.id"
+              :item-type="item.type"
+              :is-favorite="item.type === 'meal' ? isFavoriteMeal(item.idMeal || item.id) : isFavoriteCocktail(item.idDrink || item.id)"
+              :show-actions="true"
+              @toggle-favorite="handleToggleFavorite"
+              @share-item="handleShareItem"
+            />
+          </div>
+          <div v-else class="empty-state">
+            <div class="empty-icon">
+              <i class="pi pi-heart"></i>
+            </div>
+            <h4 class="empty-title">No favorites yet</h4>
+            <p class="empty-description">Start exploring recipes and cocktails and save your favorites!</p>
+            <NuxtLink to="/" class="btn btn-primary"> Explore Recipes </NuxtLink>
+          </div>
+        </section>
+      </div>
+
       <!-- Account Info Tab -->
       <div class="tab-pane fade" :class="{ show: activeTab === 'account', active: activeTab === 'account' }" role="tabpanel">
-        <div v-if="pendingProfile && !profileData" class="text-center py-5">
-          <div class="spinner-border" role="status">
-            <span class="visually-hidden">Loading...</span>
+        <ClientOnly>
+          <!-- Main slot for client-side rendering -->
+          <div v-if="pendingProfile" class="text-center py-5">
+            <div class="spinner-border" role="status"><span class="visually-hidden">Loading Profile...</span></div>
           </div>
-        </div>
-        <div v-else-if="profileError" class="alert alert-danger">Could not load profile data: {{ profileError.message }}</div>
-        <div v-else-if="user && profileData" class="row g-4">
-          <div class="col-lg-7">
-            <div class="card h-100 shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title mb-4">Account Information</h5>
-                <div class="row">
-                  <div class="col-md-4 text-center mb-3 mb-md-0">
-                    <img :src="profileData.avatar_url || '/img/avatar-placeholder.png'" alt="User Avatar" class="img-thumbnail rounded-circle profileAvatar mb-2" width="150" height="150" />
-                    <div class="mt-2">
-                      <button class="btn btn-sm btn-outline-secondary" disabled title="Avatar upload coming soon">Change Avatar</button>
-                      <div class="form-text">Feature coming soon</div>
+          <div v-else-if="profileError" class="alert alert-danger">Could not load profile data: {{ profileError.message }}</div>
+          <div v-else-if="user && profileData" class="row g-4">
+            <div class="col-lg-7">
+              <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                  <h5 class="card-title mb-4">Account Information</h5>
+                  <div class="row">
+                    <div class="col-md-4 text-center mb-3 mb-md-0">
+                      <img :src="profileData.avatar_url || '/img/avatar-placeholder.png'" alt="User Avatar" class="img-thumbnail rounded-circle profileAvatar mb-2" width="150" height="150" />
+                      <div class="mt-2">
+                        <button class="btn btn-sm btn-outline-secondary" disabled title="Avatar upload coming soon">Change Avatar</button>
+                        <div class="form-text">Feature coming soon</div>
+                      </div>
                     </div>
-                  </div>
-                  <div class="col-md-8">
-                    <form @submit.prevent="handleUpdateProfile">
-                      <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" id="email" class="form-control" :value="user.email" disabled readonly />
-                      </div>
-                      <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text" id="username" class="form-control" v-model="editableProfile.username" required minlength="3" :disabled="formDisabled" />
-                      </div>
-                      <div class="mb-3">
-                        <label for="fullName" class="form-label">Full Name</label>
-                        <input type="text" id="fullName" class="form-control" v-model="editableProfile.full_name" :disabled="formDisabled" />
-                        <div class="form-text">Optional</div>
-                      </div>
-                      <button type="submit" class="btn btn-primary me-2" :disabled="formDisabled || !isProfileChanged">
-                        <span v-if="updateLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                        {{ updateLoading ? "Saving..." : "Save Changes" }}
-                      </button>
-                      <button type="button" @click="resetForm" class="btn btn-secondary me-2" :disabled="formDisabled || !isProfileChanged">Cancel</button>
-                    </form>
+                    <div class="col-md-8">
+                      <form @submit.prevent="handleUpdateProfile">
+                        <div class="mb-3">
+                          <label for="email" class="form-label">Email</label>
+                          <input type="email" id="email" class="form-control" :value="user.email" disabled readonly />
+                        </div>
+                        <div class="mb-3">
+                          <label for="username" class="form-label">Username</label>
+                          <input type="text" id="username" class="form-control" v-model="editableProfile.username" required minlength="3" :disabled="formDisabled" />
+                        </div>
+                        <div class="mb-3">
+                          <label for="fullName" class="form-label">Full Name</label>
+                          <input type="text" id="fullName" class="form-control" v-model="editableProfile.full_name" :disabled="formDisabled" />
+                          <div class="form-text">Optional</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary me-2" :disabled="formDisabled || !isProfileChanged">
+                          <span v-if="updateLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                          {{ updateLoading ? "Saving..." : "Save Changes" }}
+                        </button>
+                        <button type="button" @click="resetForm" class="btn btn-secondary me-2" :disabled="formDisabled || !isProfileChanged">Cancel</button>
+                      </form>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-        <div v-else-if="user && !profileData && !pendingProfile && !profileError" class="alert alert-warning">Could not load profile details. Please try again later or contact support.</div>
+          <div v-else-if="user && !profileData" class="alert alert-warning">Could not load profile details. Please try again later or contact support.</div>
+          <div v-else class="alert alert-info">Please log in to view your profile.</div>
+
+          <!-- Fallback for server-side rendering and initial client-side before main slot renders -->
+          <template #fallback>
+            <div class="text-center py-5">
+              <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading Account Info...</span>
+              </div>
+            </div>
+          </template>
+        </ClientOnly>
       </div>
 
       <!-- Security Tab -->
@@ -110,63 +155,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Favorites Tab -->
-      <div class="tab-pane fade" :class="{ show: activeTab === 'favorites', active: activeTab === 'favorites' }" role="tabpanel">
-        <section class="favoritesSection mt-4">
-          <h3 class="sectionTitle mb-4">Your Favorites</h3>
-          <div v-if="!favoritesLoaded" class="row row-cols-2 row-cols-md-4 g-4 placeholder-glow">
-            <SkeletonCard v-for="n in 4" :key="'sk-fav-' + n" />
-          </div>
-          <ErrorMessage v-else-if="favoritesError" :message="favoritesError" />
-          <div v-else-if="favoriteItems.length > 0" class="row row-cols-2 row-cols-md-4 g-4">
-            <ItemCard
-              v-for="item in favoriteItems"
-              :key="item.type + '-' + (item.idMeal || item.idDrink)"
-              :image-url="item.type === 'meal' ? item.strMealThumb : item.strDrinkThumb"
-              :title="item.type === 'meal' ? item.strMeal : item.strDrink"
-              :link-to="item.type === 'meal' ? { path: `/recipe/${item.idMeal}` } : { path: `/cocktail/${item.idDrink}` }"
-              :item-id="item.type === 'meal' ? item.idMeal : item.idDrink"
-              :item-type="item.type"
-              :is-favorite="item.type === 'meal' ? isFavoriteMeal(item.idMeal) : isFavoriteCocktail(item.idDrink)"
-              :show-actions="true"
-              @toggle-favorite="handleToggleFavorite"
-              @share-item="handleShareItem"
-            />
-          </div>
-          <p v-else class="text-muted">You have no favorites yet. Start adding some recipes or cocktails!</p>
-        </section>
-      </div>
-
-      <!-- User Creations Tab -->
-      <div class="tab-pane fade" :class="{ show: activeTab === 'creations', active: activeTab === 'creations' }" role="tabpanel">
-        <section class="userCreationsSection mt-4">
-          <h3 class="sectionTitle mb-4">Your Recipes & Cocktails</h3>
-          <div v-if="creationsLoading" class="row row-cols-2 row-cols-md-3 g-4 placeholder-glow">
-            <SkeletonCard v-for="n in 3" :key="'sk-ugc-' + n" />
-          </div>
-          <ErrorMessage v-else-if="creationsError" :message="creationsError" />
-          <div v-else>
-            <div class="mb-3 text-end">
-              <button class="btn btn-success me-2" @click="navigateTo('/creations/new')"><i class="bi bi-plus-lg me-1"></i> Create New</button>
-              <button class="btn btn-outline-primary" @click="navigateTo('/creations/my-creations')">Manage All</button>
-            </div>
-            <div v-if="userCreations.length > 0" class="row row-cols-1 row-cols-md-3 g-4">
-              <div v-for="creation in userCreations.slice(0, 3)" :key="creation.id" class="col">
-                <div class="card h-100">
-                  <img v-if="creation.image_path" :src="creation.image_path" class="card-img-top" alt="Recipe Image" />
-                  <div class="card-body">
-                    <h5 class="card-title">{{ creation.title }}</h5>
-                    <p class="card-text text-muted small mb-2">{{ creation.type === "cocktail" ? "Cocktail" : "Recipe" }}</p>
-                    <p class="card-text">{{ creation.description }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <p v-else class="text-muted">You haven't created any recipes or cocktails yet. Start by clicking <strong>Create New</strong>!</p>
-          </div>
-        </section>
-      </div>
     </div>
   </div>
 </template>
@@ -188,7 +176,6 @@ const user = useSupabaseUser();
 const client = useSupabaseClient();
 const toast = useToast();
 
-const profileData = ref(null);
 const editableProfile = reactive({
   username: "",
   full_name: "",
@@ -200,6 +187,7 @@ const newPassword = ref("");
 const confirmPassword = ref("");
 
 const {
+  data: profileData,
   pending: pendingProfile,
   error: profileError,
   refresh: refreshProfile,
@@ -207,26 +195,35 @@ const {
   "fetch-profile",
   async () => {
     if (!user.value) return null;
-    console.log("Fetching profile for user:", user.value.id);
-    const { data, error } = await client.from("profiles").select(`username, full_name, avatar_url`).eq("id", user.value.id).single();
+    const { data: fetchedData, error: dbError } = await client.from("profiles").select(`username, full_name, avatar_url`).eq("id", user.value.id).single();
 
-    if (error) {
-      console.error("Error fetching profile:", error);
-      toast.error("Could not load profile: " + error.message);
-      throw error;
+    if (dbError) {
+      toast.error("Could not load profile: " + dbError.message);
+      throw dbError;
     }
-    if (data) {
-      console.log("Profile data received:", data);
-      profileData.value = data;
-      editableProfile.username = data.username;
-      editableProfile.full_name = data.full_name;
-      editableProfile.avatar_url = data.avatar_url;
-      originalProfile.username = data.username;
-      originalProfile.full_name = data.full_name;
-    }
-    return data;
+    return fetchedData;
   },
   { immediate: true, watch: [user] }
+);
+
+watch(
+  profileData,
+  (newProfileDataValue) => {
+    if (newProfileDataValue) {
+      editableProfile.username = newProfileDataValue.username;
+      editableProfile.full_name = newProfileDataValue.full_name;
+      editableProfile.avatar_url = newProfileDataValue.avatar_url;
+      originalProfile.username = newProfileDataValue.username;
+      originalProfile.full_name = newProfileDataValue.full_name;
+    } else {
+      editableProfile.username = "";
+      editableProfile.full_name = "";
+      editableProfile.avatar_url = "";
+      originalProfile.username = "";
+      originalProfile.full_name = "";
+    }
+  },
+  { immediate: true }
 );
 
 const updateLoading = ref(false);
@@ -329,29 +326,60 @@ const openShareModal = inject("openShareModal");
 const favoritesError = ref("");
 const favoriteItems = ref([]);
 
-// Fetch favorite items details (meals and cocktails)
 const fetchFavoriteItems = async () => {
   favoritesError.value = "";
   favoriteItems.value = [];
   try {
-    // Only fetch if loaded and there are favorites
     if (!favoritesLoaded.value) return;
     const mealIds = favoriteMealIds.value;
     const cocktailIds = favoriteCocktailIds.value;
-    const mealPromises = mealIds.map((id) => getRecipeById(id));
-    const cocktailPromises = cocktailIds.map((id) => getCocktailById(id));
-    const [meals, cocktails] = await Promise.all([Promise.allSettled(mealPromises), Promise.allSettled(cocktailPromises)]);
-    // Filter out missing/deleted items
-    const mealResults = meals.filter((r) => r.status === "fulfilled" && r.value && r.value.idMeal).map((r) => ({ ...r.value, type: "meal" }));
-    const cocktailResults = cocktails.filter((r) => r.status === "fulfilled" && r.value && r.value.idDrink).map((r) => ({ ...r.value, type: "cocktail" }));
-    favoriteItems.value = [...mealResults, ...cocktailResults];
+
+    if (mealIds.length === 0 && cocktailIds.length === 0) {
+      favoriteItems.value = [];
+      return;
+    }
+
+    const mealPromises = mealIds.map(async (id) => {
+      const mealData = await getRecipeById(id);
+      if (!mealData) return null;
+      return {
+        id: mealData.idMeal || mealData.id,
+        type: "meal",
+        title: mealData.strMeal || mealData.title,
+        image_path: mealData.image_path || mealData.strMealThumb,
+        strMealThumb: mealData.strMealThumb,
+        idMeal: mealData.idMeal,
+      };
+    });
+    const cocktailPromises = cocktailIds.map(async (id) => {
+      const cocktailData = await getCocktailById(id);
+      if (!cocktailData) return null;
+      return {
+        id: cocktailData.idDrink || cocktailData.id,
+        type: "cocktail",
+        title: cocktailData.strDrink || cocktailData.title,
+        image_path: cocktailData.image_path || cocktailData.strDrinkThumb,
+        strDrinkThumb: cocktailData.strDrinkThumb,
+        idDrink: cocktailData.idDrink,
+      };
+    });
+
+    const [mealsSettled, cocktailsSettled] = await Promise.all([Promise.allSettled(mealPromises), Promise.allSettled(cocktailPromises)]);
+
+    const mealResults = mealsSettled.filter((r) => r.status === "fulfilled" && r.value).map((r) => r.value);
+    const cocktailResults = cocktailsSettled.filter((r) => r.status === "fulfilled" && r.value).map((r) => r.value);
+
+    favoriteItems.value = [...mealResults, ...cocktailResults].sort((a, b) => {
+      const nameA = a.title;
+      const nameB = b.title;
+      return nameA.localeCompare(nameB);
+    });
   } catch (e) {
-    console.error("Error loading favorite items:", e);
+    console.error("Error loading favorite items in profile:", e);
     favoritesError.value = "Failed to load your favorites. Please try again later.";
   }
 };
 
-// Watch for changes in favoritesLoaded or favorite IDs
 watch(
   [favoritesLoaded, favoriteMealIds, favoriteCocktailIds],
   ([loaded]) => {
@@ -366,8 +394,7 @@ const handleToggleFavorite = ({ id, type }) => {
   } else if (type === "cocktail") {
     toggleCocktailFavorite(id);
   }
-  // Refetch after toggle
-  setTimeout(fetchFavoriteItems, 400); // Small delay for DB sync
+  setTimeout(fetchFavoriteItems, 400);
 };
 
 const handleShareItem = ({ title, itemType, itemId }) => {
@@ -414,5 +441,5 @@ useHead({
   title: "My Profile | ChloroFill 🍴🍹",
 });
 
-const activeTab = ref("account");
+const activeTab = ref("favorites");
 </script>

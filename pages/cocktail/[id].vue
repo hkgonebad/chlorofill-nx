@@ -52,7 +52,7 @@
     <div v-else-if="cocktail" class="recipe-content">
       <!-- Image Header -->
       <div class="image-header position-relative mb-3">
-        <img :src="cocktail.strDrinkThumb + '/large'" class="img-fluid recipe-image" :alt="cocktail.strDrink" />
+        <img :src="displayImage" class="img-fluid recipe-image" :alt="displayTitle" />
       </div>
 
       <div class="container recipe-body px-4 py-2">
@@ -60,7 +60,7 @@
         <div class="d-flex align-items-center mb-4 view-header">
           <BackButton class="btn btn-light btn-sm rounded-circle me-3 back-button-icon" />
           <h2 class="mb-0 flex-grow-1 section-title">
-            {{ cocktail.strDrink }}
+            {{ displayTitle }}
           </h2>
           <!-- Share Icon Button -->
           <button @click="openShareModal" class="btn btn-sm btn-light rounded-circle ms-3 action-icon" title="Share Cocktail" aria-label="Share Cocktail">
@@ -79,19 +79,24 @@
 
         <!-- Meta Info -->
         <p class="text-muted small mb-3">
-          <span v-if="cocktail.strCategory"
-            >Category:
-            <NuxtLink :to="`/cocktails/filter/c/${encodeURIComponent(cocktail.strCategory)}`">
+          <span v-if="cocktail.strCategory">
+            Category:
+            <template v-if="cocktail.strCategory !== 'User Cocktail' && cocktail.strCategory !== 'User Creation'">
+              <NuxtLink :to="`/cocktails/filter/c/${encodeURIComponent(cocktail.strCategory)}`">
+                {{ cocktail.strCategory }}
+              </NuxtLink>
+            </template>
+            <template v-else>
               {{ cocktail.strCategory }}
-            </NuxtLink>
+            </template>
           </span>
-          <span v-if="cocktail.strAlcoholic">
+          <span v-if="cocktail.strAlcoholic && cocktail.strAlcoholic !== 'N/A'">
             | Type:
             <NuxtLink :to="`/cocktails/filter/a/${encodeURIComponent(cocktail.strAlcoholic)}`">
               {{ cocktail.strAlcoholic }}
             </NuxtLink>
           </span>
-          <span v-if="cocktail.strGlass">
+          <span v-if="cocktail.strGlass && cocktail.strGlass !== 'N/A'">
             | Glass:
             <NuxtLink :to="`/cocktails/filter/g/${encodeURIComponent(cocktail.strGlass)}`">
               {{ cocktail.strGlass }}
@@ -99,13 +104,13 @@
           </span>
         </p>
         <!-- Affiliate Link for Glass -->
-        <p class="small affiliate-links">
-          <a v-if="cocktail.strGlass" :href="getAmazonSearchUrl(cocktail.strGlass + ' glass')" target="_blank" rel="noopener noreferrer nofollow" class="me-2 affiliate-link">
+        <p class="small affiliate-links" v-if="cocktail.strGlass && cocktail.strGlass !== 'N/A'">
+          <a v-if="cocktail.strGlass && cocktail.strGlass !== 'N/A'" :href="getAmazonSearchUrl(cocktail.strGlass + ' glass')" target="_blank" rel="noopener noreferrer nofollow" class="me-2 affiliate-link">
             <i class="pi pi-amazon"></i> Shop for {{ cocktail.strGlass }} glasses
           </a>
         </p>
-        <p v-if="cocktail.strTags" class="mb-3">
-          <span class="badge bg-secondary me-1" v-for="tag in cocktail.strTags.split(',')" :key="tag">{{ tag.trim() }}</span>
+        <p v-if="displayTags.length > 0" class="mb-3">
+          <span class="badge bg-secondary me-1" v-for="tag in displayTags" :key="tag">{{ tag }}</span>
         </p>
 
         <!-- Ingredients -->
@@ -127,13 +132,13 @@
         <!-- Instructions -->
         <h5 class="mt-4">Instructions</h5>
         <p class="instructions-text">
-          {{ cocktail.strInstructions }}
+          {{ displayDescription }}
         </p>
 
         <!-- Source/Video Links -->
         <div class="mt-4">
           <!-- No direct source or video usually provided by cocktailDB -->
-          <a :href="`https://www.google.com/search?q=${encodeURIComponent(cocktail.strDrink + ' cocktail recipe')}`" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary me-2">Search for Recipe Variations</a>
+          <a :href="`https://www.google.com/search?q=${encodeURIComponent(displayTitle + ' cocktail recipe')}`" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary me-2">Search for Recipe Variations</a>
         </div>
       </div>
     </div>
@@ -261,6 +266,25 @@ useHead(() => {
     ],
     link: [{ rel: "canonical", href: pageUrl }],
   };
+});
+
+// Helper: check if ID is UUID (UGC)
+const isUuid = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+
+// --- UGC Field Mapping ---
+const displayTitle = computed(() => cocktail.value?.strDrink || "");
+const displayDescription = computed(() => cocktail.value?.strInstructions || "");
+const displayTags = computed(() => cocktail.value?.strTags?.split(",").map((t) => t.trim()) || []);
+const displayImage = getCocktailImageUrl;
+
+const getCocktailImageUrl = computed(() => {
+  if (!cocktail.value) return "";
+  // If UGC (UUID), do not append /large
+  if (isUuid(cocktailId.value)) {
+    return cocktail.value.strDrinkThumb || "/img/no-recipe.jpg";
+  }
+  // API: append /large
+  return cocktail.value.strDrinkThumb + "/large";
 });
 </script>
 

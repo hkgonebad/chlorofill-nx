@@ -1,3 +1,5 @@
+import { useUserCreations } from "./useUserCreations"; // Adjust path if necessary
+
 // MealDB API composable
 export function useMealApi() {
   // Cache mechanism
@@ -6,6 +8,11 @@ export function useMealApi() {
 
   // Base URL for the MealDB API
   const baseUrl = "https://www.themealdb.com/api/json/v1/1";
+
+  const { getUserCreationById } = useUserCreations();
+
+  // Helper to check if ID is UUID (UGC)
+  const isUuid = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
 
   // Get from cache or fetch new data
   const fetchWithCache = async (url, cacheKey) => {
@@ -54,9 +61,41 @@ export function useMealApi() {
 
   // Get recipe details by ID
   const getRecipeById = async (id) => {
+    if (isUuid(id)) {
+      const { data: ugcRecipe, error } = await getUserCreationById(id);
+      if (error || !ugcRecipe) {
+        console.error(`[useMealApi] UGC recipe not found for ID: ${id}`, error);
+        return null;
+      }
+      // Map UGC fields
+      const mappedRecipe = {
+        idMeal: ugcRecipe.id,
+        strMeal: ugcRecipe.title,
+        strInstructions: ugcRecipe.steps ? ugcRecipe.steps.join("\n") : ugcRecipe.description, // Prefer steps array, fallback to description
+        strMealThumb: ugcRecipe.image_path,
+        strCategory: ugcRecipe.type === "recipe" ? "User Recipe" : "User Creation",
+        strArea: "N/A",
+        strTags: (ugcRecipe.tags || []).join(","),
+        isUgc: true,
+      };
+      // Map ingredients (up to 20 for MealDB compatibility)
+      if (ugcRecipe.ingredients && Array.isArray(ugcRecipe.ingredients)) {
+        for (let i = 0; i < 20; i++) {
+          if (ugcRecipe.ingredients[i]) {
+            mappedRecipe[`strIngredient${i + 1}`] = ugcRecipe.ingredients[i].name || "";
+            mappedRecipe[`strMeasure${i + 1}`] = `${ugcRecipe.ingredients[i].amount || ""} ${ugcRecipe.ingredients[i].unit || ""}`.trim();
+          } else {
+            mappedRecipe[`strIngredient${i + 1}`] = null;
+            mappedRecipe[`strMeasure${i + 1}`] = null;
+          }
+        }
+      }
+      return mappedRecipe;
+    }
+    // If not UUID, fetch from MealDB API
     const cacheKey = `recipe_${id}`;
     const result = await fetchWithCache(`${baseUrl}/lookup.php?i=${id}`, cacheKey);
-    return result.meals ? result.meals[0] : null;
+    return result.meals ? { ...result.meals[0], isUgc: false } : null;
   };
 
   // Get areas (cuisines)

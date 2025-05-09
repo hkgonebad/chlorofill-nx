@@ -1,3 +1,5 @@
+import { useUserCreations } from "./useUserCreations"; // Adjust path if necessary
+
 // CocktailDB API composable
 export function useCocktailApi() {
   // Cache mechanism
@@ -6,6 +8,11 @@ export function useCocktailApi() {
 
   // Base URL for the CocktailDB API
   const baseUrl = "https://www.thecocktaildb.com/api/json/v1/1";
+
+  const { getUserCreationById } = useUserCreations();
+
+  // Helper to check if ID is UUID (UGC)
+  const isUuid = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
 
   // Get from cache or fetch new data
   const fetchWithCache = async (url, cacheKey) => {
@@ -89,9 +96,42 @@ export function useCocktailApi() {
 
   // Get cocktail details by ID
   const getCocktailById = async (id) => {
+    if (isUuid(id)) {
+      const { data: ugcCocktail, error } = await getUserCreationById(id);
+      if (error || !ugcCocktail) {
+        console.error(`[useCocktailApi] UGC cocktail not found for ID: ${id}`, error);
+        return null;
+      }
+      // Map UGC fields
+      const mappedCocktail = {
+        idDrink: ugcCocktail.id,
+        strDrink: ugcCocktail.title,
+        strInstructions: ugcCocktail.steps ? ugcCocktail.steps.join("\n") : ugcCocktail.description, // Prefer steps array, fallback to description
+        strDrinkThumb: ugcCocktail.image_path,
+        strCategory: ugcCocktail.type === "cocktail" ? "User Cocktail" : "User Creation",
+        strAlcoholic: "N/A",
+        strGlass: "N/A",
+        strTags: (ugcCocktail.tags || []).join(","),
+        isUgc: true,
+      };
+      // Map ingredients (up to 15 for CocktailDB compatibility)
+      if (ugcCocktail.ingredients && Array.isArray(ugcCocktail.ingredients)) {
+        for (let i = 0; i < 15; i++) {
+          if (ugcCocktail.ingredients[i]) {
+            mappedCocktail[`strIngredient${i + 1}`] = ugcCocktail.ingredients[i].name || "";
+            mappedCocktail[`strMeasure${i + 1}`] = `${ugcCocktail.ingredients[i].amount || ""} ${ugcCocktail.ingredients[i].unit || ""}`.trim();
+          } else {
+            mappedCocktail[`strIngredient${i + 1}`] = null;
+            mappedCocktail[`strMeasure${i + 1}`] = null;
+          }
+        }
+      }
+      return mappedCocktail;
+    }
+    // If not UUID, fetch from CocktailDB API
     const cacheKey = `cocktail_${id}`;
     const result = await fetchWithCache(`${baseUrl}/lookup.php?i=${id}`, cacheKey);
-    return result.drinks ? result.drinks[0] : null;
+    return result.drinks ? { ...result.drinks[0], isUgc: false } : null;
   };
 
   // Search cocktails

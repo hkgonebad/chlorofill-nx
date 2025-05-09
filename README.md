@@ -110,3 +110,4 @@ Key features inherited and adapted from the original SPA:
 ## License
 
 [MIT License](LICENSE)
+

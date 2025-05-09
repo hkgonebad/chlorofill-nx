@@ -17,11 +17,11 @@
       <template v-for="item in allFavoritesDetails" :key="item.type + '-' + item.id">
         <ItemCard
           v-if="item.idMeal || item.idDrink"
-          :image-url="item.type === 'meal' ? item.strMealThumb : item.strDrinkThumb"
+          :imageUrl="item.type === 'meal' ? item.strMealThumb : item.strDrinkThumb"
           :title="item.type === 'meal' ? item.strMeal : item.strDrink"
           :link-to="item.type === 'meal' ? `/recipe/${item.idMeal}` : `/cocktail/${item.idDrink}`"
-          :item-id="item.type === 'meal' ? item.idMeal : item.idDrink"
-          :item-type="item.type"
+          :itemId="item.type === 'meal' ? item.idMeal : item.idDrink"
+          :itemType="item.type"
           :is-favorite="true"
           @toggle-favorite="handleToggleFavorite"
           @share-item="handleShareItem"
@@ -79,12 +79,18 @@ const {
     try {
       // Fetch details concurrently
       const mealPromises = combinedMealIds.map(async (id) => {
-        const meal = await getRecipeById(id); // Corrected usage
-        return meal ? { ...meal, type: "meal", id: meal.idMeal } : null; // Add type and common 'id'
+        const meal = await getRecipeById(id); // Fetches API or maps UGC
+        if (!meal) return null;
+        // Ensure imageUrl is always a string (fallback for UGC)
+        const imageUrl = meal.isUgc ? meal.strMealThumb || "/img/no-recipe.jpg" : meal.strMealThumb;
+        return { ...meal, type: "meal", id: meal.idMeal, strMealThumb: imageUrl }; // Override strMealThumb with potentially modified URL
       });
       const cocktailPromises = combinedCocktailIds.map(async (id) => {
-        const cocktail = await getCocktailById(id);
-        return cocktail ? { ...cocktail, type: "cocktail", id: cocktail.idDrink } : null; // Add type and common 'id'
+        const cocktail = await getCocktailById(id); // Fetches API or maps UGC
+        if (!cocktail) return null;
+        // Ensure imageUrl is always a string (fallback for UGC)
+        const imageUrl = cocktail.isUgc ? cocktail.strDrinkThumb || "/img/no-recipe.jpg" : cocktail.strDrinkThumb;
+        return { ...cocktail, type: "cocktail", id: cocktail.idDrink, strDrinkThumb: imageUrl }; // Override strDrinkThumb
       });
 
       const results = await Promise.allSettled([...mealPromises, ...cocktailPromises]);

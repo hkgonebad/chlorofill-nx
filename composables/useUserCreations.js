@@ -66,6 +66,19 @@ export function useUserCreations() {
     return { success: true };
   };
 
+  // Fetch a single user creation by ID (publicly accessible if is_public)
+  const getUserCreationById = async (id) => {
+    const { data, error: fetchError } = await client
+      .from("user_creations")
+      .select("*")
+      .eq("id", id)
+      .eq("is_public", true) // Assuming only public creations are viewable this way
+      .single();
+
+    if (fetchError) return { error: fetchError.message };
+    return { data };
+  };
+
   return {
     creations,
     loading,
@@ -74,5 +87,6 @@ export function useUserCreations() {
     createUserCreation,
     updateUserCreation,
     deleteUserCreation,
+    getUserCreationById,
   };
 }

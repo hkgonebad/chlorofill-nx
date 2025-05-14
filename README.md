@@ -18,8 +18,10 @@ Key features inherited and adapted from the original SPA:
 
 * **Vue 3 (Composition API):** Utilizing `<script setup>` for clean component development.
 * **Nuxt 3:** Providing SSR, file-based routing, auto-imports, and module integration.
-* **Supabase:** Integrated for user authentication (Signup, Login, Magic Link, Logout) and profile management using `@nuxtjs/supabase`.
+* **Supabase:** Integrated for user authentication (Signup, Login, Magic Link, Logout), profile management, and storing user-generated recipes/cocktails (including image storage) using `@nuxtjs/supabase`.
+* **User-Generated Content (UGC):** Users can now create, manage, and share their own recipes and cocktails. This includes multi-step creation forms, image uploads (main and per ingredient) with client-side validation and compression, and personal creation management pages.
 * **External APIs:** Fetching recipe data from TheMealDB and TheCocktailDB via composables.
+* **Unified Search:** Global search functionality (header autocomplete and full-screen modal) now seamlessly queries both external APIs (TheMealDB, TheCocktailDB) and user-generated content, providing a comprehensive discovery experience.
 * **Routing:** File-based routing managed by Nuxt.
 * **Styling:** Responsive design using Bootstrap 5 (SCSS) integrated via Nuxt config and global assets.
 * **State Management:** Primarily using Vue Composables, potentially enhanced with Pinia (`@pinia/nuxt`).
@@ -102,8 +104,7 @@ Key features inherited and adapted from the original SPA:
 
 ## Future Enhancements
 
-* User Recipe Submissions
-* Server-side recipe saving
+* Advanced User Content Features: Moderation tools for UGC, user reporting, ratings, and more advanced filtering.
 * Recipe/Cocktail rating system
 * Advanced filtering options
 

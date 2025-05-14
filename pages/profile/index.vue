@@ -1,8 +1,8 @@
 <template>
   <div class="profileView container py-5">
-    <h2 class="sectionTitle mb-4 d-flex justify-content-between">
+    <h2 class="sectionTitle mb-4 d-flex justify-content-between align-items-center">
       <span>My Profile</span>
-      <NuxtLink to="/creations/my-creations" class="btn btn-primary btn-sm"> <i class="pi pi-pencil me-1"></i> My Creations </NuxtLink>
+      <NuxtLink to="/creations/my-creations" class="btn btn-primary"> <i class="pi pi-pencil me-1"></i> My Creations </NuxtLink>
     </h2>
 
     <!-- Tabs Navigation -->
@@ -69,10 +69,14 @@
                   <h5 class="card-title mb-4">Account Information</h5>
                   <div class="row">
                     <div class="col-md-4 text-center mb-3 mb-md-0">
-                      <img :src="profileData.avatar_url || '/img/avatar-placeholder.png'" alt="User Avatar" class="img-thumbnail rounded-circle profileAvatar mb-2" width="150" height="150" />
+                      <img :src="editableProfile.avatar_url || '/img/avatar-placeholder.png'" alt="User Avatar" class="img-thumbnail rounded-circle profileAvatar mb-2" width="150" height="150" />
+                      <input type="file" ref="avatarInput" @change="handleAvatarUpload" style="display: none" :accept="imageAcceptTypes" />
                       <div class="mt-2">
-                        <button class="btn btn-sm btn-outline-secondary" disabled title="Avatar upload coming soon">Change Avatar</button>
-                        <div class="form-text">Feature coming soon</div>
+                        <button class="btn btn-sm btn-outline-secondary" @click="triggerAvatarUpload" :disabled="formDisabled || avatarUploading">
+                          <span v-if="avatarUploading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                          {{ avatarUploading ? "Uploading..." : "Change Avatar" }}
+                        </button>
+                        <!-- <div class="form-text">Feature coming soon</div> -->
                       </div>
                     </div>
                     <div class="col-md-8">
@@ -160,7 +164,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, watch } from "vue";
+import { ref, reactive, onMounted, computed, watch, nextTick } from "vue";
 import { useSupabaseUser, useSupabaseClient, useAsyncData, navigateTo, useHead } from "#imports";
 import { useToast } from "vue-toastification";
 import ItemCard from "~/components/ItemCard.vue";
@@ -171,6 +175,10 @@ import { useMealApi } from "~/composables/useMealApi";
 import { useCocktailApi } from "~/composables/useCocktailApi";
 import { inject } from "vue";
 import { useUserCreations } from "~/composables/useUserCreations";
+import { useImageUpload } from "~/composables/useImageUpload";
+
+const { compressAndUploadImage, ALLOWED_TYPES: allowedAvatarTypes } = useImageUpload();
+const imageAcceptTypes = computed(() => allowedAvatarTypes.join(","));
 
 const user = useSupabaseUser();
 const client = useSupabaseClient();
@@ -230,6 +238,7 @@ const updateLoading = ref(false);
 const passwordChangeLoading = ref(false);
 const logoutLoading = ref(false);
 const avatarUploading = ref(false);
+const avatarInput = ref(null);
 
 const isProfileChanged = computed(() => {
   if (!profileData.value) return false;
@@ -314,8 +323,79 @@ const handleLogout = async () => {
   }
 };
 
+const triggerAvatarUpload = () => {
+  avatarInput.value?.click();
+};
+
 const handleAvatarUpload = async (event) => {
-  toast.info("Avatar upload functionality is not yet implemented.");
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  avatarUploading.value = true;
+  toast.info("Uploading avatar...");
+
+  try {
+    const userId = user.value.id;
+    // Sanitize username for filename part, or use a generic name like 'avatar'
+    const usernamePart = editableProfile.username
+      ? editableProfile.username
+          .toLowerCase()
+          .replace(/\s+/g, "-")
+          .replace(/[^a-z0-9-]/g, "")
+      : "user";
+    const fileExtension = file.name.slice(((file.name.lastIndexOf(".") - 1) >>> 0) + 2).toLowerCase() || "png";
+    const fileName = `${usernamePart}-avatar-${Date.now()}.${fileExtension}`;
+
+    const {
+      publicUrl,
+      error: uploadError,
+      path: storagePath,
+    } = await compressAndUploadImage(file, {
+      bucketName: "avatars", // Assuming a separate 'avatars' bucket, or use 'user-creations' with a subfolder
+      filePath: `${userId}/`, // Path within the bucket, e.g., USER_ID/
+      fileName: fileName,
+      compressionOptions: {
+        maxSizeMB: 0.5, // Smaller max size for avatars
+        maxWidthOrHeight: 250, // Resize to 250x250
+      },
+      allowedTypes: allowedAvatarTypes, // Use the allowed types from the composable
+    });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    if (publicUrl) {
+      // Update the profile in Supabase
+      const { error: dbError } = await client.from("profiles").update({ avatar_url: publicUrl, updated_at: new Date() }).eq("id", userId);
+
+      if (dbError) {
+        throw dbError;
+      }
+
+      // Optimistically update local profile data to reflect change immediately
+      editableProfile.avatar_url = publicUrl;
+      if (profileData.value) {
+        // Also update the source of truth for originalProfile reset
+        profileData.value.avatar_url = publicUrl;
+        originalProfile.avatar_url = publicUrl; // If originalProfile tracks avatar_url
+      }
+
+      toast.success("Avatar updated successfully!");
+      await refreshProfile(); // Refresh profile to get the latest state from DB if needed
+    } else {
+      throw new Error("Upload succeeded but no public URL was returned.");
+    }
+  } catch (error) {
+    console.error("Avatar upload failed:", error);
+    toast.error(`Avatar upload failed: ${error.message}`);
+  } finally {
+    avatarUploading.value = false;
+    // Reset file input to allow re-uploading the same file if needed
+    if (avatarInput.value) {
+      avatarInput.value.value = "";
+    }
+  }
 };
 
 const { favoriteMealIds, favoriteCocktailIds, isFavoriteMeal, isFavoriteCocktail, toggleMealFavorite, toggleCocktailFavorite, favoritesLoaded } = useFavorites();

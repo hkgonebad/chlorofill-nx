@@ -16,13 +16,15 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-// import { useRoute, useRouter, navigateTo } from "vue-router"; // These are auto-imported by Nuxt 3
 import { useToast } from "vue-toastification";
 import { useUserCreations } from "~/composables/useUserCreations";
-import { useSupabaseClient, useSupabaseUser } from "#imports";
+import { useSupabaseClient, useSupabaseUser, useRoute, useRouter, navigateTo } from "#imports";
 import UserCreationMultiStepForm from "~/components/UserCreationMultiStepForm.vue";
+import { useImageUpload } from "~/composables/useImageUpload";
 
 const { creations, fetchUserCreations, updateUserCreation } = useUserCreations();
+const { compressAndUploadImage } = useImageUpload();
+
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -39,10 +41,14 @@ const getStoragePathFromUrl = (publicUrl) => {
   if (!publicUrl) return null;
   try {
     const url = new URL(publicUrl);
-    const parts = url.pathname.split(`/${BUCKET_NAME}/`);
-    return parts[1] || null;
+    const pathSegments = url.pathname.split("/");
+    const bucketIndex = pathSegments.indexOf(BUCKET_NAME);
+    if (bucketIndex !== -1 && bucketIndex + 1 < pathSegments.length) {
+      return pathSegments.slice(bucketIndex + 1).join("/");
+    }
+    return null;
   } catch (e) {
-    console.error("Error parsing URL for storage path:", e);
+    console.error("Error parsing URL for storage path:", publicUrl, e);
     return null;
   }
 };
@@ -76,82 +82,99 @@ const handleSubmit = async (formData) => {
     const updateData = { ...formData };
     delete updateData.image;
 
-    const oldMainImagePath = creation.value.image_path;
-    let newMainImagePathInBucket = null;
+    const originalCreationData = creation.value;
 
     if (formData.image && formData.image.file && formData.image.name) {
       const mainImageFile = formData.image.file;
       const mainImageName = formData.image.name;
-      newMainImagePathInBucket = `${user.value.id}/main/${mainImageName}`;
+      const mainImageStorageFilePath = `${user.value.id}/main/`;
 
-      const { error: uploadError } = await supabase.storage.from(BUCKET_NAME).upload(newMainImagePathInBucket, mainImageFile, { upsert: true, contentType: mainImageFile.type });
+      const {
+        publicUrl,
+        error: uploadError,
+        path: newStoragePath,
+      } = await compressAndUploadImage(mainImageFile, {
+        bucketName: BUCKET_NAME,
+        filePath: mainImageStorageFilePath,
+        fileName: mainImageName,
+        compressionOptions: { maxWidthOrHeight: 1920, maxSizeMB: 1.5 },
+      });
 
       if (uploadError) {
-        toast.error(`Main image upload failed: ${uploadError.message}`);
+        toast.error(`Main image upload failed: ${uploadError.message}. Keeping old image if available.`);
+        updateData.image_path = originalCreationData.image_path;
       } else {
-        const { data: publicUrlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(newMainImagePathInBucket);
-        updateData.image_path = publicUrlData.publicUrl;
-        const oldStoragePath = getStoragePathFromUrl(oldMainImagePath);
-        if (oldStoragePath && oldStoragePath !== newMainImagePathInBucket) {
+        updateData.image_path = publicUrl;
+        const oldStoragePath = getStoragePathFromUrl(originalCreationData.image_path);
+        if (oldStoragePath && oldStoragePath !== newStoragePath) {
           await supabase.storage.from(BUCKET_NAME).remove([oldStoragePath]);
         }
       }
     } else {
-      updateData.image_path = oldMainImagePath;
+      updateData.image_path = originalCreationData.image_path;
     }
 
     if (updateData.ingredients && updateData.ingredients.length > 0) {
       for (let i = 0; i < updateData.ingredients.length; i++) {
         const formIngredient = formData.ingredients[i];
-        const originalIngredient = creation.value.ingredients && creation.value.ingredients[i] ? creation.value.ingredients[i] : {};
-        const oldIngredientImageUrl = originalIngredient.image_url;
-        let newIngredientImagePathInBucket = null;
+        const originalIngredient = originalCreationData.ingredients?.find((oi) => oi.name === formIngredient.name) || (originalCreationData.ingredients && originalCreationData.ingredients[i]);
+
+        const oldIngredientImageUrl = originalIngredient?.image_url || null;
 
         if (formIngredient.image && formIngredient.image.file && formIngredient.image.name) {
           const ingImageFile = formIngredient.image.file;
           const ingImageName = formIngredient.image.name;
-          newIngredientImagePathInBucket = `${user.value.id}/ingredients/${ingImageName}`;
+          const ingImageStorageFilePath = `${user.value.id}/ingredients/`;
 
-          const { error: ingUploadError } = await supabase.storage.from(BUCKET_NAME).upload(newIngredientImagePathInBucket, ingImageFile, { upsert: true, contentType: ingImageFile.type });
+          const {
+            publicUrl: ingPublicUrl,
+            error: ingUploadError,
+            path: newIngStoragePath,
+          } = await compressAndUploadImage(ingImageFile, {
+            bucketName: BUCKET_NAME,
+            filePath: ingImageStorageFilePath,
+            fileName: ingImageName,
+            compressionOptions: { maxWidthOrHeight: 500, maxSizeMB: 0.5 },
+          });
 
           if (ingUploadError) {
-            toast.warning(`Ingredient '${formIngredient.name}' image upload failed: ${ingUploadError.message}.`);
+            toast.warning(`Ingredient '${formIngredient.name}' image upload failed: ${ingUploadError.message}. Keeping old image if available.`);
             updateData.ingredients[i].image_url = oldIngredientImageUrl;
           } else {
-            const { data: ingPublicUrlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(newIngredientImagePathInBucket);
-            updateData.ingredients[i].image_url = ingPublicUrlData.publicUrl;
+            updateData.ingredients[i].image_url = ingPublicUrl;
             const oldIngStoragePath = getStoragePathFromUrl(oldIngredientImageUrl);
-            if (oldIngStoragePath && oldIngStoragePath !== newIngredientImagePathInBucket) {
+            if (oldIngStoragePath && oldIngStoragePath !== newIngStoragePath) {
               await supabase.storage.from(BUCKET_NAME).remove([oldIngStoragePath]);
             }
           }
+        } else if (formIngredient.existing_image_url) {
+          updateData.ingredients[i].image_url = formIngredient.existing_image_url;
         } else {
           updateData.ingredients[i].image_url = oldIngredientImageUrl;
         }
         if (updateData.ingredients[i].image) delete updateData.ingredients[i].image;
+        if (updateData.ingredients[i].existing_image_url) delete updateData.ingredients[i].existing_image_url;
       }
     }
 
-    const creationId = route.params.id;
-    const { id, user_id, created_at, ...payloadToUpdate } = updateData;
+    const { data: updatedCreation, error: updateError } = await updateUserCreation(route.params.id, updateData);
 
-    const { data: updatedCreation, error: dbUpdateError } = await updateUserCreation(creationId, payloadToUpdate);
+    if (updateError) {
+      toast.error(`Failed to update: ${updateError.message}`);
+      saving.value = false;
+      return;
+    }
 
-    if (dbUpdateError) {
-      toast.error(`Failed to update database: ${dbUpdateError.message}`);
+    toast.success("Creation updated successfully!");
+    if (updatedCreation && updatedCreation.id) {
+      const typePath = updatedCreation.type === "cocktail" ? "cocktail" : "recipe";
+      navigateTo(`/${typePath}/${updatedCreation.id}`);
     } else {
-      toast.success("Updated successfully!");
-      if (updatedCreation && updatedCreation.id) {
-        const typePath = updatedCreation.type === "cocktail" ? "cocktail" : "recipe";
-        creation.value = updatedCreation;
-        await navigateTo(`/${typePath}/${updatedCreation.id}`);
-      } else {
-        await router.push("/creations/my-creations");
-      }
+      router.push("/creations/my-creations");
     }
-  } catch (e) {
-    console.error("Error in handleSubmit (edit):", e);
-    toast.error("An unexpected error occurred during update: " + e.message);
+  } catch (error) {
+    console.error("Error in handleSubmit (edit creation):", error);
+    toast.error(`An unexpected error occurred: ${error.message}`);
   } finally {
     saving.value = false;
   }

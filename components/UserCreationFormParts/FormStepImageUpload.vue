@@ -5,8 +5,8 @@
     <div class="image-upload-container">
       <div class="mb-3">
         <label for="image" class="form-label">Select Main Image</label>
-        <input type="file" id="image" class="form-control" @change="$emit('handleImageChange', $event)" :disabled="loading" accept="image/*" />
-        <div class="form-text">Required. Minimum 1600x500px. This will be the main display image.</div>
+        <input type="file" id="image" class="form-control" @change="$emit('handleImageChange', $event)" :disabled="loading" :accept="imageAcceptTypes" />
+        <div class="form-text">Required. Minimum 1600x500px. Allowed types: JPG, PNG, WebP.</div>
       </div>
       <div v-if="mainImage.previewUrl" class="image-preview-container text-center mt-4">
         <h6 class="mb-2">Preview</h6>
@@ -28,6 +28,12 @@
 </template>
 
 <script setup>
+import { computed } from "vue";
+
+// Import or define allowed types, consistent with useImageUpload.js
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const imageAcceptTypes = computed(() => ALLOWED_MIME_TYPES.join(","));
+
 const props = defineProps({
   mainImage: {
     type: Object,

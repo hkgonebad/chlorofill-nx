@@ -26,10 +26,10 @@
           </div>
           <div class="mt-2">
             <label class="form-label small d-block">Image (Optional)</label>
-            <input type="file" class="form-control form-control-sm" @change="(e) => $emit('handleIngredientImage', e, idx)" accept="image/*" />
+            <input type="file" class="form-control form-control-sm" @change="(e) => $emit('handleIngredientImage', e, idx)" :accept="imageAcceptTypes" />
             <div v-if="ingredient.image && ingredient.image.desiredName && !ingredient.image.file" class="form-text text-muted mt-1">Current: {{ ingredient.image.desiredName }}</div>
             <div v-if="ingredient.image && ingredient.image.file" class="form-text text-success mt-1">New: {{ ingredient.image.desiredName }}</div>
-            <div class="form-text">Max 500x500px.</div>
+            <div class="form-text">Max 500x500px. Allowed types: JPG, PNG, WebP.</div>
           </div>
         </div>
       </div>
@@ -44,7 +44,11 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from "vue";
+import { ref, watch, nextTick, computed } from "vue";
+
+// Import or define allowed types, consistent with useImageUpload.js
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const imageAcceptTypes = computed(() => ALLOWED_MIME_TYPES.join(","));
 
 const props = defineProps({
   ingredients: {

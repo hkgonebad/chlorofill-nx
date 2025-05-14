@@ -7,14 +7,16 @@
 
 <script setup>
 import { ref } from "vue";
-// import { useRouter, navigateTo } from "vue-router"; // These are auto-imported by Nuxt 3
 import { useToast } from "vue-toastification";
 import { useUserCreations } from "~/composables/useUserCreations";
-import { useSupabaseClient, useSupabaseUser } from "#imports";
+import { useSupabaseClient, useSupabaseUser, useRouter, navigateTo } from "#imports";
 import UserCreationMultiStepForm from "~/components/UserCreationMultiStepForm.vue";
+import { useImageUpload } from "~/composables/useImageUpload";
 
 const { createUserCreation } = useUserCreations();
-const router = useRouter(); // This is needed, useRouter is auto-imported
+const { compressAndUploadImage } = useImageUpload();
+
+const router = useRouter();
 const toast = useToast();
 const loading = ref(false);
 const supabase = useSupabaseClient();
@@ -39,11 +41,13 @@ const handleSubmit = async (formData) => {
     if (formData.image && formData.image.file && formData.image.name) {
       const mainImageFile = formData.image.file;
       const mainImageName = formData.image.name;
-      const mainImagePathInBucket = `${user.value.id}/main/${mainImageName}`;
+      const mainImageStorageFilePath = `${user.value.id}/main/`;
 
-      const { error: uploadError } = await supabase.storage.from(BUCKET_NAME).upload(mainImagePathInBucket, mainImageFile, {
-        upsert: true,
-        contentType: mainImageFile.type,
+      const { publicUrl, error: uploadError } = await compressAndUploadImage(mainImageFile, {
+        bucketName: BUCKET_NAME,
+        filePath: mainImageStorageFilePath,
+        fileName: mainImageName,
+        compressionOptions: { maxWidthOrHeight: 1920, maxSizeMB: 1.5 },
       });
 
       if (uploadError) {
@@ -51,9 +55,9 @@ const handleSubmit = async (formData) => {
         loading.value = false;
         return;
       }
-      const { data: publicUrlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(mainImagePathInBucket);
-      creationPayload.image_path = publicUrlData.publicUrl;
-    } else if (!formData.image_path) {
+      creationPayload.image_path = publicUrl;
+    } else {
+      toast.warning("Main image was not provided or had an issue.");
     }
 
     if (creationPayload.ingredients && creationPayload.ingredients.length > 0) {
@@ -62,19 +66,20 @@ const handleSubmit = async (formData) => {
         if (ingredient.image && ingredient.image.file && ingredient.image.name) {
           const ingImageFile = ingredient.image.file;
           const ingImageName = ingredient.image.name;
-          const ingImagePathInBucket = `${user.value.id}/ingredients/${ingImageName}`;
+          const ingImageStorageFilePath = `${user.value.id}/ingredients/`;
 
-          const { error: ingUploadError } = await supabase.storage.from(BUCKET_NAME).upload(ingImagePathInBucket, ingImageFile, {
-            upsert: true,
-            contentType: ingImageFile.type,
+          const { publicUrl: ingPublicUrl, error: ingUploadError } = await compressAndUploadImage(ingImageFile, {
+            bucketName: BUCKET_NAME,
+            filePath: ingImageStorageFilePath,
+            fileName: ingImageName,
+            compressionOptions: { maxWidthOrHeight: 500, maxSizeMB: 0.5 },
           });
 
           if (ingUploadError) {
-            toast.warning(`Ingredient '${ingredient.name}' image upload failed: ${ingUploadError.message}. Continuing without it.`);
+            toast.warning(`Ingredient '${ingredient.name}' image upload failed: ${ingUploadError.message}. Continuing without this ingredient image.`);
             ingredient.image_url = null;
           } else {
-            const { data: ingPublicUrlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(ingImagePathInBucket);
-            ingredient.image_url = ingPublicUrlData.publicUrl;
+            ingredient.image_url = ingPublicUrl;
           }
         }
         if (ingredient.image) delete ingredient.image;
@@ -89,16 +94,16 @@ const handleSubmit = async (formData) => {
       return;
     }
 
-    toast.success("Created successfully!");
+    toast.success("Creation submitted successfully!");
     if (newCreation && newCreation.id) {
       const typePath = newCreation.type === "cocktail" ? "cocktail" : "recipe";
-      await navigateTo(`/${typePath}/${newCreation.id}`);
+      navigateTo(`/${typePath}/${newCreation.id}`);
     } else {
-      await router.push("/creations/my-creations");
+      router.push("/creations/my-creations");
     }
-  } catch (e) {
-    console.error("Error in handleSubmit:", e);
-    toast.error("An unexpected error occurred: " + e.message);
+  } catch (error) {
+    console.error("Error in handleSubmit (new creation):", error);
+    toast.error(`An unexpected error occurred: ${error.message}`);
   } finally {
     loading.value = false;
   }

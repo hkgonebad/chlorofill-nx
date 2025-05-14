@@ -104,16 +104,24 @@ const handleToggleFavorite = ({ id, type }) => {
   }
 };
 
-const handleShareItem = ({ title, url }) => {
-  if (openShareModal) {
+const handleShareItem = (payloadFromItemCard) => {
+  // payloadFromItemCard is { title, itemId, itemType }
+  if (openShareModal && payloadFromItemCard.itemId && payloadFromItemCard.itemType) {
+    const shareUrl = `${window.location.origin}/${payloadFromItemCard.itemType}/${payloadFromItemCard.itemId}`;
+    const shareText = `Check out this ${payloadFromItemCard.itemType}: ${payloadFromItemCard.title}`;
     openShareModal({
-      title,
-      url,
-      text: `Check out this cocktail: ${title}`,
-      type: "cocktail",
+      title: payloadFromItemCard.title,
+      url: shareUrl,
+      text: shareText,
+      type: payloadFromItemCard.itemType,
     });
   } else {
-    console.error("openShareModal function not injected");
+    console.error("Share modal function not provided or payload missing required fields.");
+    if (payloadFromItemCard && payloadFromItemCard.title) {
+      alert(`Sharing (fallback): ${payloadFromItemCard.title}`);
+    } else {
+      alert("Missing share information.");
+    }
   }
 };
 

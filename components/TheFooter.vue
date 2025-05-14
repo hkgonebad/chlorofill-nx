@@ -13,10 +13,10 @@
         <span class="nav-text d-none d-sm-block">Browse All</span>
       </NuxtLink>
 
-      <!-- Add Favorites Link -->
-      <NuxtLink :to="{ path: '/favorites' }" class="nav-item" active-class="active">
-        <i class="pi pi-heart" style="font-size: 1.3rem"></i>
-        <span class="nav-text d-none d-sm-block">Favorites</span>
+      <!-- 'Add' Link - conditionally navigates based on auth status -->
+      <NuxtLink @click.prevent="handleAddClick" to="#" class="nav-item" active-class="active">
+        <i class="pi pi-plus-circle" style="font-size: 1.3rem"></i>
+        <span class="nav-text d-none d-sm-block">Add</span>
       </NuxtLink>
 
       <NuxtLink :to="{ path: '/offers' }" class="nav-item" active-class="active">
@@ -50,9 +50,19 @@
 <script setup>
 // Use Nuxt composables for auth state
 const user = useSupabaseUser(); // Auto-imported
+const router = useRouter(); // Auto-imported for navigation
+
 // Simple check for auth loading based on user presence initially
 // More sophisticated loading state might be needed depending on app complexity
 const authLoading = ref(!user.value);
+
+const handleAddClick = () => {
+  if (user.value) {
+    router.push("/creations/new");
+  } else {
+    router.push("/login");
+  }
+};
 
 // Watch user state to update loading
 watch(

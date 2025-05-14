@@ -51,7 +51,7 @@
     <div v-else-if="recipe" class="recipe-content">
       <!-- Image Header -->
       <div class="image-header position-relative mb-3">
-        <img :src="recipe.strMealThumb + '/large'" class="img-fluid recipe-image" :alt="recipe.strMeal" />
+        <img :src="displayImage" class="img-fluid recipe-image" :alt="displayTitle" />
       </div>
 
       <div class="container recipe-body px-4 py-2">
@@ -59,7 +59,7 @@
         <div class="d-flex align-items-center mb-4 view-header">
           <BackButton class="btn btn-light btn-sm rounded-circle me-3 back-button-icon" />
           <h2 class="mb-0 flex-grow-1 section-title">
-            {{ recipe.strMeal }}
+            {{ displayTitle }}
           </h2>
           <!-- Share Icon Button -->
           <button @click="openShareModal" class="btn btn-sm btn-light rounded-circle ms-3 action-icon" title="Share Recipe" aria-label="Share Recipe">
@@ -78,30 +78,41 @@
 
         <!-- Meta Info -->
         <p class="text-muted small mb-3">
-          <span v-if="recipe.strCategory"
-            >Category:
-            <!-- Use NuxtLink for internal navigation -->
-            <NuxtLink :to="{ path: `/category/${recipe.strCategory}` }">
+          <span v-if="recipe.strCategory">
+            Category:
+            <template v-if="recipe.strCategory !== 'User Recipe' && recipe.strCategory !== 'User Creation'">
+              <NuxtLink :to="{ path: `/category/${recipe.strCategory}` }">
+                {{ recipe.strCategory }}
+              </NuxtLink>
+            </template>
+            <template v-else>
               {{ recipe.strCategory }}
-            </NuxtLink>
+            </template>
           </span>
-          <span v-if="recipe.strArea">
+          <span v-if="recipe.strArea && recipe.strArea !== 'N/A'">
             | Area:
-            <!-- Use NuxtLink for internal navigation -->
             <NuxtLink :to="{ path: `/areas/${recipe.strArea}` }">
               {{ recipe.strArea }}
             </NuxtLink>
           </span>
         </p>
         <!-- Affiliate Link for Category/Area -->
-        <p class="small affiliate-links">
-          <a v-if="recipe.strCategory" :href="getAmazonSearchUrl(recipe.strCategory + ' cookbook')" target="_blank" rel="noopener noreferrer nofollow" class="me-2 affiliate-link">
+        <p class="small affiliate-links" v-if="(recipe.strCategory && recipe.strCategory !== 'User Recipe' && recipe.strCategory !== 'User Creation') || (recipe.strArea && recipe.strArea !== 'N/A')">
+          <a
+            v-if="recipe.strCategory && recipe.strCategory !== 'User Recipe' && recipe.strCategory !== 'User Creation'"
+            :href="getAmazonSearchUrl(recipe.strCategory + ' cookbook')"
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            class="me-2 affiliate-link"
+          >
             <i class="pi pi-amazon"></i> Shop {{ recipe.strCategory }} Cookbooks
           </a>
-          <a v-if="recipe.strArea" :href="getAmazonSearchUrl(recipe.strArea + ' cuisine')" target="_blank" rel="noopener noreferrer nofollow" class="affiliate-link"> <i class="pi pi-amazon"></i> Shop {{ recipe.strArea }} Cuisine </a>
+          <a v-if="recipe.strArea && recipe.strArea !== 'N/A'" :href="getAmazonSearchUrl(recipe.strArea + ' cuisine')" target="_blank" rel="noopener noreferrer nofollow" class="affiliate-link">
+            <i class="pi pi-amazon"></i> Shop {{ recipe.strArea }} Cuisine
+          </a>
         </p>
-        <p v-if="recipe.strTags" class="mb-3">
-          <span class="badge bg-secondary me-1" v-for="tag in recipe.strTags.split(',')" :key="tag">{{ tag.trim() }}</span>
+        <p v-if="displayTags.length > 0" class="mb-3">
+          <span class="badge bg-secondary me-1" v-for="tag in displayTags" :key="tag">{{ tag }}</span>
         </p>
 
         <!-- Ingredients -->
@@ -109,7 +120,7 @@
         <ul class="list-unstyled ingredients-list mb-4">
           <li class="d-flex align-items-center mb-2" v-for="(ingredient, index) in ingredientsAndMeasures" :key="index">
             <!-- Ingredient Thumbnail -->
-            <img :src="getIngredientImageUrl(ingredient.name)" :alt="ingredient.name" class="ingredient-thumbnail me-2" loading="lazy" @error="($event) => ($event.target.style.display = 'none')" />
+            <img :src="ingredient.imageUrl" :alt="ingredient.name" class="ingredient-thumbnail me-2" loading="lazy" @error="($event) => ($event.target.style.display = 'none')" />
             <div class="flex-grow-1">
               <!-- Affiliate link for ingredient -->
               <a :href="getAmazonSearchUrl(ingredient.name)" target="_blank" rel="noopener noreferrer nofollow" class="affiliate-link">{{ ingredient.name }}</a>
@@ -123,7 +134,7 @@
         <!-- Instructions -->
         <h5 class="mt-4">Instructions</h5>
         <p class="instructions-text">
-          {{ recipe.strInstructions }}
+          {{ displayDescription }}
         </p>
 
         <!-- Source/Video Links -->
@@ -154,8 +165,11 @@ import { getAmazonSearchUrl } from "~/utils/affiliateLinks";
 
 // Get route and API composable
 const route = useRoute();
-const { getRecipeById } = useMealApi(); // Renamed from getMealDetailsById
+const { getRecipeById } = useMealApi();
 const recipeId = computed(() => route.params.id);
+
+// Helper: check if ID is UUID (UGC) - DEFINED ONCE HERE
+const isUuid = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
 
 // --- Data Fetching with useAsyncData ---
 const {
@@ -166,6 +180,7 @@ const {
   `recipe-${recipeId.value}`,
   () => {
     if (!recipeId.value) return null;
+    // Assuming getRecipeById can fetch both API and UGC (which might have a different structure for ingredients)
     return getRecipeById(recipeId.value);
   },
   {
@@ -186,21 +201,33 @@ const isCurrentFavorite = computed(() => {
 const ingredientsAndMeasures = computed(() => {
   if (!recipe.value) return [];
   const list = [];
-  for (let i = 1; i <= 20; i++) {
-    const ingredient = recipe.value[`strIngredient${i}`];
-    const measure = recipe.value[`strMeasure${i}`];
-    if (ingredient && ingredient.trim() !== "") {
-      list.push({ name: ingredient.trim(), measure: measure ? measure.trim() : "" });
+  const isUgcRecipe = isUuid(recipeId.value); // Use the defined isUuid
+
+  if (isUgcRecipe && recipe.value.ingredients && Array.isArray(recipe.value.ingredients)) {
+    // UGC items store ingredients in an array of objects
+    recipe.value.ingredients.forEach((ing) => {
+      list.push({
+        name: ing.name,
+        measure: `${ing.amount || ""} ${ing.unit || ""}`.trim(),
+        imageUrl: ing.image_url || `https://www.themealdb.com/images/ingredients/${encodeURIComponent(ing.name.trim().replace(/ /g, "_"))}-Small.png`, // Fallback to MealDB if UGC image missing
+      });
+    });
+  } else if (!isUgcRecipe) {
+    // API items store ingredients in strIngredientX and strMeasureX
+    for (let i = 1; i <= 20; i++) {
+      const ingredientName = recipe.value[`strIngredient${i}`];
+      const measure = recipe.value[`strMeasure${i}`];
+      if (ingredientName && ingredientName.trim() !== "") {
+        list.push({
+          name: ingredientName.trim(),
+          measure: measure ? measure.trim() : "",
+          imageUrl: `https://www.themealdb.com/images/ingredients/${encodeURIComponent(ingredientName.trim().replace(/ /g, "_"))}-Small.png`,
+        });
+      }
     }
   }
   return list;
 });
-
-const getIngredientImageUrl = (ingredientName) => {
-  if (!ingredientName) return "";
-  const formattedName = encodeURIComponent(ingredientName.trim().replace(/ /g, "_"));
-  return `https://www.themealdb.com/images/ingredients/${formattedName}-Small.png`;
-};
 
 // --- Event Handlers ---
 const handleToggleFavorite = ({ id, type }) => {
@@ -262,6 +289,26 @@ useHead(() => {
     link: [{ rel: "canonical", href: pageUrl }],
   };
 });
+
+const getRecipeImageUrl = computed(() => {
+  if (!recipe.value) return "";
+  // For UGC, image_path should be the full Supabase URL
+  if (isUuid(recipeId.value)) {
+    return recipe.value.image_path || recipe.value.strMealThumb || "/img/no-recipe.jpg"; // Prefer image_path if available for UGC
+  }
+  // API: append /large to strMealThumb
+  return recipe.value.strMealThumb ? recipe.value.strMealThumb + "/large" : "/img/no-recipe.jpg";
+});
+
+// --- UGC Field Mapping ---
+const displayTitle = computed(() => recipe.value?.title || recipe.value?.strMeal || ""); // Use .title for UGC, .strMeal for API
+const displayDescription = computed(() => recipe.value?.description || recipe.value?.strInstructions || "");
+const displayTags = computed(() => {
+  if (recipe.value?.tags && Array.isArray(recipe.value.tags)) return recipe.value.tags; // UGC tags are array
+  if (recipe.value?.strTags) return recipe.value.strTags.split(",").map((t) => t.trim()); // API tags are string
+  return [];
+});
+const displayImage = getRecipeImageUrl;
 </script>
 
 <style scoped lang="scss">

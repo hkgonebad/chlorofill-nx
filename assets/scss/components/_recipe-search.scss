@@ -56,22 +56,73 @@
 }
 
 .search-modal {
-    --bs-modal-bg: rgba(255, 255, 255, 0.85); // Light
+    --bs-modal-bg: rgba(255, 255, 255, 0.85); // Light mode background
+    --bs-modal-color: var(--bs-dark); // Default text color for light mode
 
     @media (prefers-color-scheme: dark) {
-        --bs-modal-bg: rgba(33, 37, 41, 0.85); // Dark (Bootstrap's $gray-900 with opacity)
+        --bs-modal-bg: rgba(33, 37, 41, 0.85); // Dark mode background
+        --bs-modal-color: var(--bs-light); // Default text color for dark mode
     }
+
+
 
     .modal-header {
         border-bottom: none;
-    }
 
-    .modal-content {}
+        .btn-close {
+            // Bootstrap 5.3+ should handle this with CSS variables like --bs-btn-close-color
+            // No specific filter needed if Bootstrap is up to date and configured for color modes.
+        }
+    }
 
     .modal-body {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
+    }
+
+    .modal-title,
+    .searchBody p,
+    .search-results-container .alert,
+    .search-results-container .text-muted {
+        color: var(--bs-modal-color); // Ensure these texts adapt to modal's theme color
+    }
+
+    .input-group {
+        .form-control {
+            background-color: var(--bs-body-bg); // Use general body background for inputs
+            color: var(--bs-body-color); // Use general body text color
+            border-color: var(--bs-border-color);
+
+            &::placeholder {
+                color: var(--bs-secondary-color); // Standard placeholder color
+            }
+        }
+
+        .input-group-text {
+            background-color: var(--bs-tertiary-bg);
+            border-color: var(--bs-border-color);
+        }
+    }
+
+    .list-group-item {
+        background-color: transparent; // So modal background shows through
+        color: var(--bs-modal-color); // Use modal's themed text color
+        border-bottom: 1px solid var(--bs-border-color-translucent);
+
+        &:last-child {
+            border-bottom: none;
+        }
+
+        &:hover,
+        &:focus,
+        &.active {
+            // For NuxtLink active state
+            background-color: var(--bs-primary-bg-subtle); // Theme-aware subtle primary background
+            color: var(--bs-primary-text-emphasis); // Theme-aware primary text
+        }
+
+        // Badges (.badge) within list items should adapt automatically via Bootstrap
     }
 }

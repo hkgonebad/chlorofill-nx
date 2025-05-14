@@ -75,6 +75,7 @@
 import { ref, watch, onMounted, nextTick, onBeforeUnmount } from "vue";
 import { useMealApi } from "~/composables/useMealApi";
 import { useCocktailApi } from "~/composables/useCocktailApi";
+import { useUserCreations } from "~/composables/useUserCreations";
 import { debounce } from "lodash-es";
 
 const props = defineProps({
@@ -84,6 +85,7 @@ const emit = defineEmits(["update:visible"]);
 
 const { searchRecipes: searchMealsByName } = useMealApi();
 const { searchCocktails } = useCocktailApi();
+const { searchUserCreations } = useUserCreations();
 
 const modalRef = ref(null);
 const searchInputRef = ref(null);
@@ -163,7 +165,7 @@ const search = debounce(async () => {
   console.log(`Searching for: "${searchQuery.value}"`);
 
   try {
-    const [mealRes, cocktailRes] = await Promise.allSettled([searchMealsByName(searchQuery.value), searchCocktails(searchQuery.value)]);
+    const [mealRes, cocktailRes, ugcRes] = await Promise.allSettled([searchMealsByName(searchQuery.value), searchCocktails(searchQuery.value), searchUserCreations(searchQuery.value)]);
 
     let combinedResults = [];
     if (mealRes.status === "fulfilled" && mealRes.value) {
@@ -178,7 +180,14 @@ const search = debounce(async () => {
       console.error("Cocktail search in modal failed:", cocktailRes.reason);
     }
 
-    combinedResults.sort((a, b) => (a.strMeal || a.strDrink).localeCompare(b.strMeal || b.strDrink));
+    if (ugcRes.status === "fulfilled" && ugcRes.value && ugcRes.value.data) {
+      combinedResults = combinedResults.concat(ugcRes.value.data);
+    } else if (ugcRes.status === "rejected" || (ugcRes.value && ugcRes.value.error)) {
+      const reason = ugcRes.status === "rejected" ? ugcRes.reason : ugcRes.value && ugcRes.value.error;
+      console.error("User Creations search in modal failed:", reason);
+    }
+
+    combinedResults.sort((a, b) => (a.strMeal || a.strDrink || a.name).localeCompare(b.strMeal || b.strDrink || b.name));
 
     results.value = combinedResults;
   } catch (error) {

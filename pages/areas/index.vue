@@ -40,15 +40,19 @@ const {
     const API_BASE_URL = "https://www.themealdb.com/api/json/v1/1/";
     const url = `${API_BASE_URL}list.php?a=list`;
     try {
-      // Use fetch for universal fetching
-      const data = await fetch(url);
-      if (!data || !data.meals) {
-        console.warn("No areas found in API response.", data);
-        // Throw error for useAsyncData to catch
-        throw new Error("Could not retrieve the list of areas.");
+      const response = await fetch(url); // Using ofetch or native fetch
+      if (!response.ok) {
+        // Throw error for useAsyncData to catch if response not ok
+        throw new Error(`Failed to fetch areas: HTTP ${response.status}`);
+      }
+      const jsonData = await response.json(); // Explicitly parse JSON
+
+      if (!jsonData || !jsonData.meals || !Array.isArray(jsonData.meals)) {
+        console.warn("No areas array found in API response after parsing.", jsonData);
+        throw new Error("Could not retrieve the list of areas: Invalid data format.");
       }
       // Sort alphabetically
-      return data.meals.sort((a, b) => a.strArea.localeCompare(b.strArea));
+      return jsonData.meals.sort((a, b) => a.strArea.localeCompare(b.strArea));
     } catch (e) {
       console.error("Error fetching areas:", e);
       // Re-throw the error for useAsyncData

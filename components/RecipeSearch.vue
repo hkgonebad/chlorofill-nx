@@ -48,10 +48,12 @@ import { ref, onMounted, onBeforeUnmount } from "vue";
 import { navigateTo } from "#imports";
 import { useMealApi } from "~/composables/useMealApi";
 import { useCocktailApi } from "~/composables/useCocktailApi";
+import { useUserCreations } from "~/composables/useUserCreations";
 
 // Use API composables
 const { searchRecipes } = useMealApi();
 const { searchCocktails } = useCocktailApi();
+const { searchUserCreations } = useUserCreations();
 
 // Search Autocomplete State
 const searchQuery = ref("");
@@ -63,7 +65,7 @@ const hideTimer = ref(null); // Timer for delayed hide
 const MIN_QUERY_LENGTH = 3;
 const DEBOUNCE_DELAY = 400; // ms
 
-// Fetch suggestions from BOTH APIs
+// Fetch suggestions from APIs
 const fetchSuggestions = async (query) => {
   if (query.length < MIN_QUERY_LENGTH) {
     suggestions.value = [];
@@ -76,8 +78,12 @@ const fetchSuggestions = async (query) => {
   let apiError = null;
 
   try {
-    // Fetch from both APIs concurrently, wait for all results
-    const results = await Promise.allSettled([searchRecipes(query), searchCocktails(query)]);
+    // Fetch from all APIs concurrently, wait for all results
+    const results = await Promise.allSettled([
+      searchRecipes(query), // MealDB search
+      searchCocktails(query), // CocktailDB search
+      searchUserCreations(query), // User Creations search
+    ]);
 
     const combinedSuggestions = [];
 
@@ -88,6 +94,7 @@ const fetchSuggestions = async (query) => {
           id: meal.idMeal,
           name: meal.strMeal,
           type: "meal",
+          thumb: meal.strMealThumb, // Added for consistency if needed later
         });
       });
     } else if (results[0].status === "rejected") {
@@ -102,11 +109,30 @@ const fetchSuggestions = async (query) => {
           id: cocktail.idDrink,
           name: cocktail.strDrink,
           type: "cocktail",
+          thumb: cocktail.strDrinkThumb, // Added for consistency if needed later
         });
       });
     } else if (results[1].status === "rejected") {
       console.error("Error fetching cocktail suggestions:", results[1].reason);
       apiError = apiError ? apiError + " & cocktail suggestions." : "Could not load cocktail suggestions.";
+    }
+
+    // Process User Creations results
+    if (results[2].status === "fulfilled" && results[2].value && results[2].value.data) {
+      results[2].value.data.forEach((ugcItem) => {
+        // ugcItem is already mapped in the composable with id, name, type, isUgc, thumb
+        combinedSuggestions.push({
+          id: ugcItem.id,
+          name: ugcItem.name,
+          type: ugcItem.type, // This will be 'meal' or 'cocktail'
+          isUgc: ugcItem.isUgc, // True
+          thumb: ugcItem.thumb,
+        });
+      });
+    } else if (results[2].status === "rejected" || (results[2].value && results[2].value.error)) {
+      const reason = results[2].status === "rejected" ? results[2].reason : results[2].value && results[2].value.error;
+      console.error("Error fetching user creation suggestions:", reason);
+      apiError = apiError ? apiError + " & user creation suggestions." : "Could not load user creation suggestions.";
     }
 
     combinedSuggestions.sort((a, b) => a.name.localeCompare(b.name));
@@ -117,7 +143,11 @@ const fetchSuggestions = async (query) => {
     apiError = "An unexpected error occurred during search.";
   } finally {
     isLoading.value = false;
-    showSuggestions.value = searchQuery.value.length >= MIN_QUERY_LENGTH;
+    showSuggestions.value = searchQuery.value.length >= MIN_QUERY_LENGTH && suggestions.value.length > 0;
+    // Corrected logic for showing suggestions also when no results found but query is long enough
+    if (searchQuery.value.length >= MIN_QUERY_LENGTH && suggestions.value.length === 0 && !isLoading.value) {
+      showSuggestions.value = true;
+    }
     if (apiError) {
       console.warn("API Errors:", apiError); // Consider displaying this
     }

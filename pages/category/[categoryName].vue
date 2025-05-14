@@ -43,7 +43,7 @@
 <script setup>
 import { ref, computed, inject } from "vue";
 // Use Nuxt's useRoute to get route parameters
-import { useRoute } from "vue-router"; // REMOVE
+// import { useRoute } from "vue-router"; // Auto-imported by Nuxt
 // Import reusable components using Nuxt alias
 import ItemCard from "~/components/ItemCard.vue";
 import ErrorMessage from "~/components/ErrorMessage.vue";
@@ -91,12 +91,25 @@ const handleToggleFavorite = (payload) => {
 };
 
 // Handler for sharing - Uses injected function to open the global modal
-const handleShare = (payload) => {
-  if (openShareModal) {
-    openShareModal(payload); // Pass the payload (title, url)
+const handleShare = (payloadFromItemCard) => {
+  // payloadFromItemCard is { title: recipeTitle, itemId: recipeId, itemType: 'meal' }
+  if (openShareModal && payloadFromItemCard.itemId && payloadFromItemCard.itemType) {
+    const shareUrl = `${window.location.origin}/${payloadFromItemCard.itemType}/${payloadFromItemCard.itemId}`;
+    const shareText = `Check out this ${payloadFromItemCard.itemType}: ${payloadFromItemCard.title}`;
+    openShareModal({
+      title: payloadFromItemCard.title,
+      url: shareUrl,
+      text: shareText,
+      type: payloadFromItemCard.itemType,
+    });
   } else {
-    console.error("Share modal function not provided/injected.");
-    alert(`Sharing (fallback): ${payload.title}\nURL: ${payload.url}`);
+    console.error("Share modal function not provided or payload missing required fields.");
+    // Fallback alert if something is wrong
+    if (payloadFromItemCard && payloadFromItemCard.title) {
+      alert(`Sharing (fallback): ${payloadFromItemCard.title}`);
+    } else {
+      alert("Missing share information.");
+    }
   }
 };
 

@@ -50,7 +50,7 @@ import BackButton from "@/components/BackButton.vue";
 // Get route and API composables
 const route = useRoute();
 const { getMealsByArea } = useMealApi();
-const { isFavorite: isFavoriteMeal, toggleMealFavorite } = useFavorites();
+const { isFavoriteMeal, toggleMealFavorite } = useFavorites();
 
 // Inject share modal function
 const openShareModal = inject("openShareModal");

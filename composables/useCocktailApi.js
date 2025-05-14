@@ -105,16 +105,24 @@ export function useCocktailApi() {
       // Map UGC fields
       const mappedCocktail = {
         idDrink: ugcCocktail.id,
+        id: ugcCocktail.id,
         strDrink: ugcCocktail.title,
-        strInstructions: ugcCocktail.steps ? ugcCocktail.steps.join("\n") : ugcCocktail.description, // Prefer steps array, fallback to description
+        strInstructions: ugcCocktail.steps ? ugcCocktail.steps.join("\n") : ugcCocktail.description,
         strDrinkThumb: ugcCocktail.image_path,
         strCategory: ugcCocktail.type === "cocktail" ? "User Cocktail" : "User Creation",
         strAlcoholic: "N/A",
         strGlass: "N/A",
         strTags: (ugcCocktail.tags || []).join(","),
         isUgc: true,
+        ingredients: ugcCocktail.ingredients || [],
+        steps: ugcCocktail.steps || [],
+        type: ugcCocktail.type,
+        description: ugcCocktail.description,
+        image_path: ugcCocktail.image_path,
+        title: ugcCocktail.title,
+        is_public: ugcCocktail.is_public,
       };
-      // Map ingredients (up to 15 for CocktailDB compatibility)
+      // Map ingredients to strIngredientX/strMeasureX for broader compatibility
       if (ugcCocktail.ingredients && Array.isArray(ugcCocktail.ingredients)) {
         for (let i = 0; i < 15; i++) {
           if (ugcCocktail.ingredients[i]) {

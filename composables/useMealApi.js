@@ -70,15 +70,24 @@ export function useMealApi() {
       // Map UGC fields
       const mappedRecipe = {
         idMeal: ugcRecipe.id,
+        id: ugcRecipe.id,
         strMeal: ugcRecipe.title,
-        strInstructions: ugcRecipe.steps ? ugcRecipe.steps.join("\n") : ugcRecipe.description, // Prefer steps array, fallback to description
+        strInstructions: ugcRecipe.steps ? ugcRecipe.steps.join("\n") : ugcRecipe.description,
         strMealThumb: ugcRecipe.image_path,
         strCategory: ugcRecipe.type === "recipe" ? "User Recipe" : "User Creation",
         strArea: "N/A",
         strTags: (ugcRecipe.tags || []).join(","),
         isUgc: true,
+        ingredients: ugcRecipe.ingredients || [],
+        steps: ugcRecipe.steps || [],
+        type: ugcRecipe.type,
+        description: ugcRecipe.description,
+        image_path: ugcRecipe.image_path,
+        title: ugcRecipe.title,
+        is_public: ugcRecipe.is_public,
       };
-      // Map ingredients (up to 20 for MealDB compatibility)
+      // Map ingredients to strIngredientX/strMeasureX for broader compatibility (e.g. if some generic component expects it)
+      // but ensure the primary `ingredients` array is available for UGC-specific handling on detail pages.
       if (ugcRecipe.ingredients && Array.isArray(ugcRecipe.ingredients)) {
         for (let i = 0; i < 20; i++) {
           if (ugcRecipe.ingredients[i]) {

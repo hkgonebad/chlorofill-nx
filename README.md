@@ -17,11 +17,21 @@ This project demonstrates migrating a feature-rich Vue 3 SPA to the Nuxt 3 frame
 Key features inherited and adapted from the original SPA:
 
 * **Vue 3 (Composition API):** Utilizing `<script setup>` for clean component development.
-* **Nuxt 3:** Providing SSR, file-based routing, auto-imports, and module integration.
-* **Supabase:** Integrated for user authentication (Signup, Login, Magic Link, Logout), profile management, and storing user-generated recipes/cocktails (including image storage) using `@nuxtjs/supabase`.
-* **User-Generated Content (UGC):** Users can now create, manage, and share their own recipes and cocktails. This includes multi-step creation forms, image uploads (main and per ingredient) with client-side validation and compression, and personal creation management pages.
-* **External APIs:** Fetching recipe data from TheMealDB and TheCocktailDB via composables.
-* **Unified Search:** Global search functionality (header autocomplete and full-screen modal) now seamlessly queries both external APIs (TheMealDB, TheCocktailDB) and user-generated content, providing a comprehensive discovery experience.
+* **Nuxt 3:** Providing SSR, file-based routing, auto-imports, and module integration for a modern, performant web application.
+* **Supabase Full-Stack Integration:**
+    *   **Authentication:** Robust user authentication (Signup, Login with Email/Username, Magic Link, Logout) managed via `@nuxtjs/supabase`.
+    *   **Database:** PostgreSQL backend for comprehensive profile management (including usernames, theme preferences), user-generated recipes/cocktails, and favorites.
+    *   **Storage:** Securely handles user avatar uploads and all images associated with user-created content (main recipe/cocktail images, individual ingredient images) using Supabase Storage, including deletion of old assets.
+    *   **Edge Functions:** Leveraged for backend logic such as sending email notifications to moderators upon new content submission, complete with JWT-based one-click approval links.
+* **Advanced User-Generated Content (UGC) System:**
+    *   **Create, Read, Update, Delete (CRUD):** Users can create, view, edit, and delete their own recipes and cocktails.
+    *   **Rich Content Forms:** Intuitive multi-step forms for content creation, featuring dynamic addition/removal of ingredients and steps, and dedicated image uploads for the main creation and each ingredient.
+    *   **Image Processing & Validation:** Client-side image validation (type, dimensions guidance) and compression using a shared `useImageUpload` composable.
+    *   **Seamless Integration:** UGC is fully integrated into all site features, including global search (appearing alongside API results), category listings, and dedicated detail pages.
+    *   **Content Management:** Users have a dedicated "My Creations" page to manage their content, with visibility of pending submissions.
+    *   **Moderation Foundation:** Initial moderation system implemented, including database flags (`is_approved`, `is_flagged`) and automated email notifications to administrators for new content.
+* **External APIs:** Fetching recipe data from TheMealDB and TheCocktailDB via composables, with results cached for performance.
+* **Unified Search:** Global search functionality (header autocomplete and full-screen modal) seamlessly queries and merges results from both external APIs and approved user-generated content, providing a comprehensive discovery experience.
 * **Routing:** File-based routing managed by Nuxt.
 * **Styling:** Responsive design using Bootstrap 5 (SCSS) integrated via Nuxt config and global assets.
 * **State Management:** Primarily using Vue Composables, potentially enhanced with Pinia (`@pinia/nuxt`).
@@ -104,7 +114,7 @@ Key features inherited and adapted from the original SPA:
 
 ## Future Enhancements
 
-* Advanced User Content Features: Moderation tools for UGC, user reporting, ratings, and more advanced filtering.
+* Advanced User Content Features: Comprehensive admin moderation panel, user reporting system, content rating/commenting, and advanced filtering for UGC.
 * Recipe/Cocktail rating system
 * Advanced filtering options
 

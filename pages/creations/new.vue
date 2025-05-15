@@ -37,6 +37,7 @@ const handleSubmit = async (formData) => {
     delete creationPayload.image;
     creationPayload.user_id = user.value.id;
     creationPayload.image_path = null;
+    creationPayload.is_approved = false;
 
     if (formData.image && formData.image.file && formData.image.name) {
       const mainImageFile = formData.image.file;
@@ -94,8 +95,14 @@ const handleSubmit = async (formData) => {
       return;
     }
 
-    toast.success("Creation submitted successfully!");
+    toast.success("Creation submitted successfully! It will be reviewed by an admin.");
+
     if (newCreation && newCreation.id) {
+      // The moderation email notification is now handled by a database webhook
+      // invoking the 'notify-moderator-on-submission' function.
+      // No direct client-side call is needed here anymore.
+      console.log("Creation saved. Moderator will be notified via DB webhook for ID:", newCreation.id);
+
       const typePath = newCreation.type === "cocktail" ? "cocktail" : "recipe";
       navigateTo(`/${typePath}/${newCreation.id}`);
     } else {

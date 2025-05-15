@@ -1,6 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
+  compatibilityDate: "2025-05-16",
 
   // Modules
   modules: ["@nuxtjs/supabase", "@pinia/nuxt", "@vueuse/nuxt", "@nuxtjs/google-fonts"],

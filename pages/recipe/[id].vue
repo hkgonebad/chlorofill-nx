@@ -97,17 +97,17 @@
           </span>
         </p>
         <!-- Affiliate Link for Category/Area -->
-        <p class="small affiliate-links" v-if="(recipe.strCategory && recipe.strCategory !== 'User Recipe' && recipe.strCategory !== 'User Creation') || (recipe.strArea && recipe.strArea !== 'N/A')">
+        <p class="small external-product-links" v-if="(recipe.strCategory && recipe.strCategory !== 'User Recipe' && recipe.strCategory !== 'User Creation') || (recipe.strArea && recipe.strArea !== 'N/A')">
           <a
             v-if="recipe.strCategory && recipe.strCategory !== 'User Recipe' && recipe.strCategory !== 'User Creation'"
             :href="getAmazonSearchUrl(recipe.strCategory + ' cookbook')"
             target="_blank"
             rel="noopener noreferrer nofollow"
-            class="me-2 affiliate-link"
+            class="me-2 external-product-link"
           >
             <i class="pi pi-amazon"></i> Shop {{ recipe.strCategory }} Cookbooks
           </a>
-          <a v-if="recipe.strArea && recipe.strArea !== 'N/A'" :href="getAmazonSearchUrl(recipe.strArea + ' cuisine')" target="_blank" rel="noopener noreferrer nofollow" class="affiliate-link">
+          <a v-if="recipe.strArea && recipe.strArea !== 'N/A'" :href="getAmazonSearchUrl(recipe.strArea + ' cuisine')" target="_blank" rel="noopener noreferrer nofollow" class="external-product-link">
             <i class="pi pi-amazon"></i> Shop {{ recipe.strArea }} Cuisine
           </a>
         </p>
@@ -123,7 +123,7 @@
             <img :src="ingredient.imageUrl" :alt="ingredient.name" class="ingredient-thumbnail me-2" loading="lazy" @error="($event) => ($event.target.style.display = 'none')" />
             <div class="flex-grow-1">
               <!-- Affiliate link for ingredient -->
-              <a :href="getAmazonSearchUrl(ingredient.name)" target="_blank" rel="noopener noreferrer nofollow" class="affiliate-link">{{ ingredient.name }}</a>
+              <a :href="getAmazonSearchUrl(ingredient.name)" target="_blank" rel="noopener noreferrer nofollow" class="external-product-link">{{ ingredient.name }}</a>
             </div>
             <div class="text-muted ms-2">
               {{ ingredient.measure }}
@@ -302,7 +302,11 @@ const getRecipeImageUrl = computed(() => {
 
 // --- UGC Field Mapping ---
 const displayTitle = computed(() => recipe.value?.title || recipe.value?.strMeal || ""); // Use .title for UGC, .strMeal for API
-const displayDescription = computed(() => recipe.value?.description || recipe.value?.strInstructions || "");
+const displayDescription = computed(() => {
+  const description = recipe.value?.description || recipe.value?.strInstructions || "";
+  // Normalize newlines to prevent hydration mismatches with pre-wrap
+  return description.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+});
 const displayTags = computed(() => {
   if (recipe.value?.tags && Array.isArray(recipe.value.tags)) return recipe.value.tags; // UGC tags are array
   if (recipe.value?.strTags) return recipe.value.strTags.split(",").map((t) => t.trim()); // API tags are string
@@ -312,107 +316,5 @@ const displayImage = getRecipeImageUrl;
 </script>
 
 <style scoped lang="scss">
-.recipe-image {
-  width: 100%;
-  max-height: 400px; /* Limit image height */
-  object-fit: cover;
-}
-
-.view-header {
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--bs-border-color-translucent);
-  position: relative; /* For potential absolute positioning inside */
-}
-
-.ingredients-list li {
-  padding: 0.3rem 0;
-}
-
-.ingredient-thumbnail {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-  background-color: var(--bs-tertiary-bg);
-  border-radius: 50%;
-  padding: 2px;
-  vertical-align: middle;
-}
-
-.instructions-text {
-  white-space: pre-wrap; /* Preserve line breaks */
-  line-height: 1.7;
-}
-
-.favorite-button {
-  transition: transform 0.2s ease, background-color 0.2s ease;
-}
-.favorite-button.active {
-  background-color: var(--bs-danger);
-  color: white;
-  border-color: var(--bs-danger);
-  transform: scale(1.1);
-}
-.favorite-button:not(.active):hover {
-  background-color: var(--bs-danger-bg-subtle);
-}
-
-.back-button-icon {
-  /* No specific styles needed now */
-}
-
-.action-icon {
-  transition: background-color 0.2s ease;
-}
-.action-icon:hover {
-  background-color: var(--bs-secondary-bg-subtle);
-}
-
-.affiliate-links a {
-  font-size: 0.85em;
-  text-decoration: none;
-  color: var(--bs-secondary-text);
-  transition: color 0.2s ease;
-  &:hover {
-    color: var(--bs-primary);
-    text-decoration: underline;
-  }
-  .pi {
-    font-size: 0.9em;
-    margin-right: 0.2em;
-  }
-}
-
-/* Placeholder styles */
-.image-header-placeholder {
-  width: 100%;
-  height: 300px;
-  background-color: #e9ecef;
-}
-.back-button-placeholder {
-  width: 32px;
-  height: 32px;
-  display: inline-block;
-  border-radius: 50%;
-  background-color: #e9ecef;
-}
-.favorite-button-placeholder {
-  width: 32px;
-  height: 32px;
-  display: inline-block;
-  border-radius: 50%;
-  background-color: #e9ecef;
-}
-.ingredient-thumbnail-placeholder {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: #e9ecef;
-}
-
-[data-bs-theme="dark"] .image-header-placeholder,
-[data-bs-theme="dark"] .back-button-placeholder,
-[data-bs-theme="dark"] .favorite-button-placeholder,
-[data-bs-theme="dark"] .ingredient-thumbnail-placeholder {
-  background-color: #343a40; /* Darker placeholder background */
-}
+/* SCOPED STYLES HAVE BEEN MOVED TO assets/scss/layout/_recipe-detail.scss */
 </style>

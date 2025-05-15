@@ -46,13 +46,13 @@
                   <NuxtLink
                     v-for="item in results"
                     :key="item.idMeal || item.idDrink"
-                    :to="item.type === 'meal' ? `/recipe/${item.idMeal}` : `/cocktail/${item.idDrink}`"
+                    :to="item.type === 'meal' ? `/recipe/${item.idMeal || item.id}` : `/cocktail/${item.idDrink || item.id}`"
                     class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
                     @click="closeModal"
                   >
-                    <span>{{ item.strMeal || item.strDrink }}</span>
+                    <span>{{ item.strMeal || item.strDrink || item.name }}</span>
                     <span :class="['badge rounded-pill ms-2', item.type === 'meal' ? 'text-bg-primary' : 'text-bg-secondary']">
-                      {{ item.type }}
+                      {{ item.type === "meal" ? "Recipe" : "Cocktail" }}
                     </span>
                   </NuxtLink>
                 </ul>
@@ -181,7 +181,15 @@ const search = debounce(async () => {
     }
 
     if (ugcRes.status === "fulfilled" && ugcRes.value && ugcRes.value.data) {
-      combinedResults = combinedResults.concat(ugcRes.value.data);
+      combinedResults = combinedResults.concat(
+        ugcRes.value.data.map((ugcItem) => ({
+          ...ugcItem,
+          idMeal: ugcItem.type === "meal" ? ugcItem.id : null,
+          idDrink: ugcItem.type === "cocktail" ? ugcItem.id : null,
+          strMeal: ugcItem.type === "meal" ? ugcItem.name : null,
+          strDrink: ugcItem.type === "cocktail" ? ugcItem.name : null,
+        }))
+      );
     } else if (ugcRes.status === "rejected" || (ugcRes.value && ugcRes.value.error)) {
       const reason = ugcRes.status === "rejected" ? ugcRes.reason : ugcRes.value && ugcRes.value.error;
       console.error("User Creations search in modal failed:", reason);

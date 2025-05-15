@@ -302,7 +302,11 @@ const getRecipeImageUrl = computed(() => {
 
 // --- UGC Field Mapping ---
 const displayTitle = computed(() => recipe.value?.title || recipe.value?.strMeal || ""); // Use .title for UGC, .strMeal for API
-const displayDescription = computed(() => recipe.value?.description || recipe.value?.strInstructions || "");
+const displayDescription = computed(() => {
+  const description = recipe.value?.description || recipe.value?.strInstructions || "";
+  // Normalize newlines to prevent hydration mismatches with pre-wrap
+  return description.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+});
 const displayTags = computed(() => {
   if (recipe.value?.tags && Array.isArray(recipe.value.tags)) return recipe.value.tags; // UGC tags are array
   if (recipe.value?.strTags) return recipe.value.strTags.split(",").map((t) => t.trim()); // API tags are string

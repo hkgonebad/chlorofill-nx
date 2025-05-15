@@ -51,7 +51,7 @@
     <div v-else-if="recipe" class="recipe-content">
       <!-- Image Header -->
       <div class="image-header position-relative mb-3">
-        <img :src="recipe.strMealThumb + '/large'" class="img-fluid recipe-image" :alt="recipe.strMeal" />
+        <img :src="displayImage" class="img-fluid recipe-image" :alt="displayTitle" />
       </div>
 
       <div class="container recipe-body px-4 py-2">
@@ -59,7 +59,7 @@
         <div class="d-flex align-items-center mb-4 view-header">
           <BackButton class="btn btn-light btn-sm rounded-circle me-3 back-button-icon" />
           <h2 class="mb-0 flex-grow-1 section-title">
-            {{ recipe.strMeal }}
+            {{ displayTitle }}
           </h2>
           <!-- Share Icon Button -->
           <button @click="openShareModal" class="btn btn-sm btn-light rounded-circle ms-3 action-icon" title="Share Recipe" aria-label="Share Recipe">
@@ -78,30 +78,41 @@
 
         <!-- Meta Info -->
         <p class="text-muted small mb-3">
-          <span v-if="recipe.strCategory"
-            >Category:
-            <!-- Use NuxtLink for internal navigation -->
-            <NuxtLink :to="{ path: `/category/${recipe.strCategory}` }">
+          <span v-if="recipe.strCategory">
+            Category:
+            <template v-if="recipe.strCategory !== 'User Recipe' && recipe.strCategory !== 'User Creation'">
+              <NuxtLink :to="{ path: `/category/${recipe.strCategory}` }">
+                {{ recipe.strCategory }}
+              </NuxtLink>
+            </template>
+            <template v-else>
               {{ recipe.strCategory }}
-            </NuxtLink>
+            </template>
           </span>
-          <span v-if="recipe.strArea">
+          <span v-if="recipe.strArea && recipe.strArea !== 'N/A'">
             | Area:
-            <!-- Use NuxtLink for internal navigation -->
             <NuxtLink :to="{ path: `/areas/${recipe.strArea}` }">
               {{ recipe.strArea }}
             </NuxtLink>
           </span>
         </p>
         <!-- Affiliate Link for Category/Area -->
-        <p class="small affiliate-links">
-          <a v-if="recipe.strCategory" :href="getAmazonSearchUrl(recipe.strCategory + ' cookbook')" target="_blank" rel="noopener noreferrer nofollow" class="me-2 affiliate-link">
+        <p class="small external-product-links" v-if="(recipe.strCategory && recipe.strCategory !== 'User Recipe' && recipe.strCategory !== 'User Creation') || (recipe.strArea && recipe.strArea !== 'N/A')">
+          <a
+            v-if="recipe.strCategory && recipe.strCategory !== 'User Recipe' && recipe.strCategory !== 'User Creation'"
+            :href="getAmazonSearchUrl(recipe.strCategory + ' cookbook')"
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            class="me-2 external-product-link"
+          >
             <i class="pi pi-amazon"></i> Shop {{ recipe.strCategory }} Cookbooks
           </a>
-          <a v-if="recipe.strArea" :href="getAmazonSearchUrl(recipe.strArea + ' cuisine')" target="_blank" rel="noopener noreferrer nofollow" class="affiliate-link"> <i class="pi pi-amazon"></i> Shop {{ recipe.strArea }} Cuisine </a>
+          <a v-if="recipe.strArea && recipe.strArea !== 'N/A'" :href="getAmazonSearchUrl(recipe.strArea + ' cuisine')" target="_blank" rel="noopener noreferrer nofollow" class="external-product-link">
+            <i class="pi pi-amazon"></i> Shop {{ recipe.strArea }} Cuisine
+          </a>
         </p>
-        <p v-if="recipe.strTags" class="mb-3">
-          <span class="badge bg-secondary me-1" v-for="tag in recipe.strTags.split(',')" :key="tag">{{ tag.trim() }}</span>
+        <p v-if="displayTags.length > 0" class="mb-3">
+          <span class="badge bg-secondary me-1" v-for="tag in displayTags" :key="tag">{{ tag }}</span>
         </p>
 
         <!-- Ingredients -->
@@ -109,10 +120,10 @@
         <ul class="list-unstyled ingredients-list mb-4">
           <li class="d-flex align-items-center mb-2" v-for="(ingredient, index) in ingredientsAndMeasures" :key="index">
             <!-- Ingredient Thumbnail -->
-            <img :src="getIngredientImageUrl(ingredient.name)" :alt="ingredient.name" class="ingredient-thumbnail me-2" loading="lazy" @error="($event) => ($event.target.style.display = 'none')" />
+            <img :src="ingredient.imageUrl" :alt="ingredient.name" class="ingredient-thumbnail me-2" loading="lazy" @error="($event) => ($event.target.style.display = 'none')" />
             <div class="flex-grow-1">
               <!-- Affiliate link for ingredient -->
-              <a :href="getAmazonSearchUrl(ingredient.name)" target="_blank" rel="noopener noreferrer nofollow" class="affiliate-link">{{ ingredient.name }}</a>
+              <a :href="getAmazonSearchUrl(ingredient.name)" target="_blank" rel="noopener noreferrer nofollow" class="external-product-link">{{ ingredient.name }}</a>
             </div>
             <div class="text-muted ms-2">
               {{ ingredient.measure }}
@@ -123,7 +134,7 @@
         <!-- Instructions -->
         <h5 class="mt-4">Instructions</h5>
         <p class="instructions-text">
-          {{ recipe.strInstructions }}
+          {{ displayDescription }}
         </p>
 
         <!-- Source/Video Links -->
@@ -154,8 +165,11 @@ import { getAmazonSearchUrl } from "~/utils/affiliateLinks";
 
 // Get route and API composable
 const route = useRoute();
-const { getRecipeById } = useMealApi(); // Renamed from getMealDetailsById
+const { getRecipeById } = useMealApi();
 const recipeId = computed(() => route.params.id);
+
+// Helper: check if ID is UUID (UGC) - DEFINED ONCE HERE
+const isUuid = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
 
 // --- Data Fetching with useAsyncData ---
 const {
@@ -166,6 +180,7 @@ const {
   `recipe-${recipeId.value}`,
   () => {
     if (!recipeId.value) return null;
+    // Assuming getRecipeById can fetch both API and UGC (which might have a different structure for ingredients)
     return getRecipeById(recipeId.value);
   },
   {
@@ -186,21 +201,33 @@ const isCurrentFavorite = computed(() => {
 const ingredientsAndMeasures = computed(() => {
   if (!recipe.value) return [];
   const list = [];
-  for (let i = 1; i <= 20; i++) {
-    const ingredient = recipe.value[`strIngredient${i}`];
-    const measure = recipe.value[`strMeasure${i}`];
-    if (ingredient && ingredient.trim() !== "") {
-      list.push({ name: ingredient.trim(), measure: measure ? measure.trim() : "" });
+  const isUgcRecipe = isUuid(recipeId.value); // Use the defined isUuid
+
+  if (isUgcRecipe && recipe.value.ingredients && Array.isArray(recipe.value.ingredients)) {
+    // UGC items store ingredients in an array of objects
+    recipe.value.ingredients.forEach((ing) => {
+      list.push({
+        name: ing.name,
+        measure: `${ing.amount || ""} ${ing.unit || ""}`.trim(),
+        imageUrl: ing.image_url || `https://www.themealdb.com/images/ingredients/${encodeURIComponent(ing.name.trim().replace(/ /g, "_"))}-Small.png`, // Fallback to MealDB if UGC image missing
+      });
+    });
+  } else if (!isUgcRecipe) {
+    // API items store ingredients in strIngredientX and strMeasureX
+    for (let i = 1; i <= 20; i++) {
+      const ingredientName = recipe.value[`strIngredient${i}`];
+      const measure = recipe.value[`strMeasure${i}`];
+      if (ingredientName && ingredientName.trim() !== "") {
+        list.push({
+          name: ingredientName.trim(),
+          measure: measure ? measure.trim() : "",
+          imageUrl: `https://www.themealdb.com/images/ingredients/${encodeURIComponent(ingredientName.trim().replace(/ /g, "_"))}-Small.png`,
+        });
+      }
     }
   }
   return list;
 });
-
-const getIngredientImageUrl = (ingredientName) => {
-  if (!ingredientName) return "";
-  const formattedName = encodeURIComponent(ingredientName.trim().replace(/ /g, "_"));
-  return `https://www.themealdb.com/images/ingredients/${formattedName}-Small.png`;
-};
 
 // --- Event Handlers ---
 const handleToggleFavorite = ({ id, type }) => {
@@ -262,110 +289,32 @@ useHead(() => {
     link: [{ rel: "canonical", href: pageUrl }],
   };
 });
+
+const getRecipeImageUrl = computed(() => {
+  if (!recipe.value) return "";
+  // For UGC, image_path should be the full Supabase URL
+  if (isUuid(recipeId.value)) {
+    return recipe.value.image_path || recipe.value.strMealThumb || "/img/no-recipe.jpg"; // Prefer image_path if available for UGC
+  }
+  // API: append /large to strMealThumb
+  return recipe.value.strMealThumb ? recipe.value.strMealThumb + "/large" : "/img/no-recipe.jpg";
+});
+
+// --- UGC Field Mapping ---
+const displayTitle = computed(() => recipe.value?.title || recipe.value?.strMeal || ""); // Use .title for UGC, .strMeal for API
+const displayDescription = computed(() => {
+  const description = recipe.value?.description || recipe.value?.strInstructions || "";
+  // Normalize newlines to prevent hydration mismatches with pre-wrap
+  return description.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+});
+const displayTags = computed(() => {
+  if (recipe.value?.tags && Array.isArray(recipe.value.tags)) return recipe.value.tags; // UGC tags are array
+  if (recipe.value?.strTags) return recipe.value.strTags.split(",").map((t) => t.trim()); // API tags are string
+  return [];
+});
+const displayImage = getRecipeImageUrl;
 </script>
 
 <style scoped lang="scss">
-.recipe-image {
-  width: 100%;
-  max-height: 400px; /* Limit image height */
-  object-fit: cover;
-}
-
-.view-header {
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--bs-border-color-translucent);
-  position: relative; /* For potential absolute positioning inside */
-}
-
-.ingredients-list li {
-  padding: 0.3rem 0;
-}
-
-.ingredient-thumbnail {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-  background-color: var(--bs-tertiary-bg);
-  border-radius: 50%;
-  padding: 2px;
-  vertical-align: middle;
-}
-
-.instructions-text {
-  white-space: pre-wrap; /* Preserve line breaks */
-  line-height: 1.7;
-}
-
-.favorite-button {
-  transition: transform 0.2s ease, background-color 0.2s ease;
-}
-.favorite-button.active {
-  background-color: var(--bs-danger);
-  color: white;
-  border-color: var(--bs-danger);
-  transform: scale(1.1);
-}
-.favorite-button:not(.active):hover {
-  background-color: var(--bs-danger-bg-subtle);
-}
-
-.back-button-icon {
-  /* No specific styles needed now */
-}
-
-.action-icon {
-  transition: background-color 0.2s ease;
-}
-.action-icon:hover {
-  background-color: var(--bs-secondary-bg-subtle);
-}
-
-.affiliate-links a {
-  font-size: 0.85em;
-  text-decoration: none;
-  color: var(--bs-secondary-text);
-  transition: color 0.2s ease;
-  &:hover {
-    color: var(--bs-primary);
-    text-decoration: underline;
-  }
-  .pi {
-    font-size: 0.9em;
-    margin-right: 0.2em;
-  }
-}
-
-/* Placeholder styles */
-.image-header-placeholder {
-  width: 100%;
-  height: 300px;
-  background-color: #e9ecef;
-}
-.back-button-placeholder {
-  width: 32px;
-  height: 32px;
-  display: inline-block;
-  border-radius: 50%;
-  background-color: #e9ecef;
-}
-.favorite-button-placeholder {
-  width: 32px;
-  height: 32px;
-  display: inline-block;
-  border-radius: 50%;
-  background-color: #e9ecef;
-}
-.ingredient-thumbnail-placeholder {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: #e9ecef;
-}
-
-[data-bs-theme="dark"] .image-header-placeholder,
-[data-bs-theme="dark"] .back-button-placeholder,
-[data-bs-theme="dark"] .favorite-button-placeholder,
-[data-bs-theme="dark"] .ingredient-thumbnail-placeholder {
-  background-color: #343a40; /* Darker placeholder background */
-}
+/* SCOPED STYLES HAVE BEEN MOVED TO assets/scss/layout/_recipe-detail.scss */
 </style>

@@ -13,6 +13,7 @@
     "@popperjs/core": "2.11.8",
     "@supabase/supabase-js": "2.49.4",
     "bootstrap": "5.3.5",
+    "browser-image-compression": "^2.0.2",
     "lodash-es": "4.17.21",
     "nuxt": "^3.17.1",
     "open-props": "1.7.15",

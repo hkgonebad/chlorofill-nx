@@ -1,6 +1,7 @@
 // Styles specific to the Recipe Detail View
 
-.recipe-detail-view {
+.recipe-detail-view,
+.cocktail-detail-view {
     padding-bottom: 80px;
     /* Ensure space above bottom nav */
 }
@@ -10,16 +11,6 @@
     max-height: 40vh;
     /* Limit image height */
     object-fit: cover;
-}
-
-.back-button {
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    line-height: 1;
-    font-size: 1.2rem;
-    opacity: 0.9;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); // Add shadow for visibility
 }
 
 .recipe-body h1 {
@@ -32,12 +23,13 @@
 }
 
 .ingredient-thumbnail {
-    width: 35px; // Adjust size as needed
-    height: 35px;
-    object-fit: contain; // Use contain to avoid distortion
-    vertical-align: middle; // Align with text
-    background-color: var(--bs-tertiary-bg); // Add slight background for contrast
-    border-radius: $border-radius-sm; // Slightly rounded corners
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    vertical-align: middle;
+    background-color: var(--bs-tertiary-bg);
+    border-radius: 50%;
+    padding: 2px;
 }
 
 .ingredients-list li:last-child {
@@ -51,35 +43,79 @@
 .instructions-text {
     white-space: pre-wrap;
     /* Preserve line breaks */
-    line-height: 1.6;
+    line-height: 1.7;
+}
+
+.favorite-button {
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.favorite-button.active {
+    background-color: var(--bs-danger);
+    color: white;
+    border-color: var(--bs-danger);
+    transform: scale(1.1);
+}
+
+.favorite-button:not(.active):hover {
+    background-color: var(--bs-danger-bg-subtle);
+}
+
+.action-icon {
+    transition: background-color 0.2s ease;
+}
+
+.action-icon:hover {
+    background-color: var(--bs-secondary-bg-subtle);
+}
+
+.external-product-links a.external-product-link {
+    font-size: 0.85em;
+    text-decoration: none;
+    color: var(--bs-secondary-text);
+    transition: color 0.2s ease;
+
+    &:hover {
+        color: var(--bs-primary);
+        text-decoration: underline;
+    }
+
+    .pi {
+        font-size: 0.9em;
+        margin-right: 0.2em;
+    }
 }
 
 .image-header-placeholder {
     width: 100%;
-    height: 30vh;
-    /* Approximate height */
+    height: 300px;
     background-color: var(--bs-secondary-bg);
 }
 
 .back-button-placeholder,
 .favorite-button-placeholder {
     display: inline-block;
-    width: 35px;
-    /* Match button size */
-    height: 35px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background-color: var(--bs-secondary-bg);
 }
 
 .ingredient-thumbnail-placeholder {
     display: inline-block;
-    width: 35px;
-    /* Match thumbnail size */
-    height: 35px;
-    border-radius: var(--bs-border-radius-sm);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     background-color: var(--bs-secondary-bg);
     vertical-align: middle;
 }
 
 // Dark mode adjustments are now handled globally via CSS variables
-// or in _dark-mode.scss if specific overrides needed 
+// or in _dark-mode.scss if specific overrides needed
+
+[data-bs-theme="dark"] .image-header-placeholder,
+[data-bs-theme="dark"] .back-button-placeholder,
+[data-bs-theme="dark"] .favorite-button-placeholder,
+[data-bs-theme="dark"] .ingredient-thumbnail-placeholder {
+    background-color: #343a40;
+}

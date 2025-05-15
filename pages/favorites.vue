@@ -161,18 +161,33 @@ const handleToggleFavorite = ({ id, type }) => {
   // Refetching is handled by the watch on combinedFavoriteIds
 };
 
-const handleShareItem = ({ title, url, type, itemId }) => {
+const handleShareItem = ({ title, itemId, itemType }) => {
   if (openShareModal) {
-    // Construct the correct URL for sharing based on item type and ID
-    const shareUrl = `${window.location.origin}/${type}/${itemId}`; // Assumes base URL and standard paths
+    if (!itemId || !itemType) {
+      console.error("Favorites Share: Missing itemId or itemType for sharing.");
+      alert("Cannot share this item: essential information is missing.");
+      return;
+    }
+
+    const basePath = itemType === "meal" ? "recipe" : "cocktail"; // Map 'meal' type to 'recipe' path
+    // Ensure window.location.origin is available (client-side)
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    if (!origin && process.client) {
+      console.error("Favorites Share: window.location.origin is not available.");
+      alert("Cannot generate share link: critical information unavailable.");
+      return;
+    }
+    const shareUrl = `${origin}/${basePath}/${itemId}`;
+
     openShareModal({
       title,
-      url: shareUrl, // Use the constructed URL
+      url: shareUrl,
       text: `Check out this favorite: ${title}`,
-      type: type,
+      type: itemType, // Pass the original itemType ('meal' or 'cocktail') to the modal
     });
   } else {
     console.error("openShareModal function not injected in Favorites page");
+    alert("Sharing service is currently unavailable.");
   }
 };
 

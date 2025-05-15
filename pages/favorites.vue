@@ -104,14 +104,21 @@ const {
       const results = await Promise.allSettled([...mealPromises, ...cocktailPromises]);
 
       const successfulItems = [];
-      let fetchError = false;
+      let hasActualFetchError = false; // Renamed to be clearer
 
       results.forEach((result) => {
-        if (result.status === "fulfilled" && result.value) {
-          successfulItems.push(result.value);
+        if (result.status === "fulfilled") {
+          if (result.value) {
+            // Check if the fulfilled promise has a non-null value
+            successfulItems.push(result.value);
+          }
+          // If result.value is null, it means the item was not found by getRecipeById/getCocktailById.
+          // This is an expected outcome for a missing favorite, so we don't treat it as an error here.
+          // We simply don't add it to successfulItems.
         } else {
-          console.error(`Failed to fetch a favorite:`, result.reason);
-          fetchError = true;
+          // Promise was rejected, meaning an actual error occurred in getRecipeById/getCocktailById
+          console.error(`Failed to fetch details for a favorite item:`, result.reason);
+          hasActualFetchError = true; // Flag that a real error occurred
         }
       });
 
@@ -122,9 +129,9 @@ const {
         return nameA.localeCompare(nameB);
       });
 
-      if (fetchError) {
-        // Throw an error to be caught by useAsyncData's error state
-        throw new Error("Could not load details for all favorites.");
+      // Throw an error to be caught by useAsyncData's error state ONLY if a real fetch error occurred
+      if (hasActualFetchError) {
+        throw new Error("Could not load details for some favorites. They may have been removed or an error occurred.");
       }
 
       return successfulItems;

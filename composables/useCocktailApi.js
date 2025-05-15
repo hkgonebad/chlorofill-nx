@@ -97,11 +97,20 @@ export function useCocktailApi() {
   // Get cocktail details by ID
   const getCocktailById = async (id) => {
     if (isUuid(id)) {
-      const { data: ugcCocktail, error } = await getUserCreationById(id);
-      if (error || !ugcCocktail) {
-        console.error(`[useCocktailApi] UGC cocktail not found for ID: ${id}`, error);
+      const { data: ugcCocktail, error: fetchError } = await getUserCreationById(id);
+
+      // If there was an actual error fetching from the DB
+      if (fetchError) {
+        console.error(`[useCocktailApi] Error fetching UGC cocktail for ID: ${id}`, fetchError);
         return null;
       }
+      // If no DB error, but the cocktail was not found (ugcCocktail is null)
+      if (!ugcCocktail) {
+        // This is a valid "not found" scenario, so we don't log an error, just return null.
+        return null;
+      }
+
+      // If we have ugcCocktail data, map and return it
       // Map UGC fields
       const mappedCocktail = {
         idDrink: ugcCocktail.id,

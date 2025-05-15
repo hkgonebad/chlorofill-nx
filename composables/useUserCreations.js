@@ -170,10 +170,10 @@ export function useUserCreations() {
       // For now, to allow existing UGC to be searched if public, we'll keep is_public.
       // This was previously updated to is_approved but is now removed to allow owners to see their pending creations.
       // The detail page component should handle displaying a "Pending Review" message if data.is_approved is false.
-      .single();
+      .maybeSingle();
 
-    if (fetchError) return { error: fetchError.message };
-    return { data };
+    if (fetchError) return { error: fetchError.message }; // If actual DB error
+    return { data }; // data will be null if not found, error will be undefined here
   };
 
   // Search user creations (publicly approved)

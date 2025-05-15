@@ -37,6 +37,7 @@ const handleSubmit = async (formData) => {
     delete creationPayload.image;
     creationPayload.user_id = user.value.id;
     creationPayload.image_path = null;
+    creationPayload.is_approved = false;
 
     if (formData.image && formData.image.file && formData.image.name) {
       const mainImageFile = formData.image.file;

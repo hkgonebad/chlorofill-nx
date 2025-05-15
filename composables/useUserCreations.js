@@ -76,7 +76,7 @@ export function useUserCreations() {
       // For search, we will rely on is_approved, which will be added with moderation.
       // For now, to allow existing UGC to be searched if public, we'll keep is_public.
       // This should be updated to is_approved once moderation is in place.
-      .eq("is_public", true) // TODO: Change to is_approved once moderation is implemented
+      .eq("is_approved", true) // MODIFIED: Changed from is_public to is_approved
       .single();
 
     if (fetchError) return { error: fetchError.message };
@@ -94,7 +94,7 @@ export function useUserCreations() {
       const { data, error: searchError } = await client
         .from("user_creations")
         .select("id, title, type, image_path, description, tags") // Select only needed fields
-        .eq("is_public", true) // TODO: Change to is_approved once moderation is implemented
+        .eq("is_approved", true) // MODIFIED: Changed from is_public to is_approved
         .or(`title.ilike.%${query}%,description.ilike.%${query}%,tags.cs.{${query}}`)
         .limit(10);
 

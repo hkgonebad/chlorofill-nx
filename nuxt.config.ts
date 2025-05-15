@@ -7,27 +7,27 @@ export default defineNuxtConfig({
   modules: ["@nuxtjs/supabase", "@pinia/nuxt", "@vueuse/nuxt", "@nuxtjs/google-fonts"],
 
   // CSS
-  css: ["bootstrap/dist/css/bootstrap.min.css", "vue-toastification/dist/index.css", "primeicons/primeicons.css", "@/assets/scss/main.scss"],
+  css: [/*"bootstrap/dist/css/bootstrap.min.css", // Removed as Bootstrap SCSS is imported via main.scss */ "vue-toastification/dist/index.css", "primeicons/primeicons.css", "@/assets/scss/main.scss"],
 
   // App configuration
   app: {
     head: {
-      title: "ChloroFill 🍴🍹 - A Vue Recipe",
+      title: "ChloroFill 🍴🍹 - A Nuxt Recipe",
       meta: [
         { charset: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1" },
         { name: "description", content: "Discover and explore delicious recipes and cocktails with ChloroFill 🍴🍹" },
         { name: "author", content: "Harikrishna Nair" },
-        { property: "og:title", content: "ChloroFill 🍴🍹 - A Vue Recipe" },
+        { property: "og:title", content: "ChloroFill 🍴🍹 - A Nuxt Recipe" },
         { property: "og:description", content: "Discover and explore delicious recipes and cocktails with ChloroFill 🍴🍹" },
-        { property: "og:image", content: "https://chlorofill.vercel.app/img/og-default.jpg" },
+        { property: "og:image", content: "https://chlorofill.vercel.app/img/no-recipe.jpg" },
         { property: "og:url", content: "https://chlorofill.vercel.app" },
         { property: "og:type", content: "website" },
         { property: "og:site_name", content: "ChloroFill" },
         { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:title", content: "ChloroFill 🍴🍹 - A Vue Recipe" },
+        { name: "twitter:title", content: "ChloroFill 🍴🍹 - A Nuxt Recipe" },
         { name: "twitter:description", content: "Discover and explore delicious recipes and cocktails with ChloroFill 🍴🍹" },
-        { name: "twitter:image", content: "https://chlorofill.vercel.app/img/og-default.jpg" },
+        { name: "twitter:image", content: "https://chlorofill.vercel.app/img/no-recipe.jpg" },
         { name: "google-site-verification", content: "J8XII2yJpqGYwWIrVml_CL7Y2bdRlT_zIKQVagmuq6U" },
       ],
       link: [

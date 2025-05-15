@@ -94,13 +94,24 @@ const handleToggleFavorite = (payload) => {
 const handleShare = (payloadFromItemCard) => {
   // payloadFromItemCard is { title: recipeTitle, itemId: recipeId, itemType: 'meal' }
   if (openShareModal && payloadFromItemCard.itemId && payloadFromItemCard.itemType) {
-    const shareUrl = `${window.location.origin}/${payloadFromItemCard.itemType}/${payloadFromItemCard.itemId}`;
-    const shareText = `Check out this ${payloadFromItemCard.itemType}: ${payloadFromItemCard.title}`;
+    // Determine the correct base path: 'recipe' for meals, 'cocktail' for cocktails
+    const basePath = payloadFromItemCard.itemType === "meal" ? "recipe" : "cocktail";
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+
+    if (!origin && process.client) {
+      // Check origin only on client
+      console.error("Category Share: window.location.origin is not available.");
+      alert("Cannot generate share link: critical information unavailable.");
+      return;
+    }
+    const shareUrl = `${origin}/${basePath}/${payloadFromItemCard.itemId}`;
+
+    const shareText = `Check out this ${payloadFromItemCard.itemType === "meal" ? "recipe" : "cocktail"}: ${payloadFromItemCard.title}`;
     openShareModal({
       title: payloadFromItemCard.title,
       url: shareUrl,
       text: shareText,
-      type: payloadFromItemCard.itemType,
+      type: payloadFromItemCard.itemType, // Original type for the modal logic
     });
   } else {
     console.error("Share modal function not provided or payload missing required fields.");

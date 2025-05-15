@@ -326,17 +326,34 @@ const handleToggleFavorite = ({ id, type }) => {
   // refreshRecommendations(); // No longer needed unless manual refresh desired elsewhere
 };
 
-const handleShareItem = ({ title, url, type, itemId }) => {
+const handleShareItem = ({ title, itemId, itemType }) => {
   if (openShareModal) {
-    const shareUrl = type && itemId ? `${window.location.origin}/${type}/${itemId}` : window.location.href;
+    if (!itemId || !itemType) {
+      console.error("Homepage Share: Missing itemId or itemType for sharing.");
+      alert("Cannot share this item: essential information is missing.");
+      return;
+    }
+
+    const basePath = itemType === "meal" ? "recipe" : "cocktail"; // Map 'meal' type to 'recipe' path
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+
+    if (!origin && process.client) {
+      // Check origin only on client
+      console.error("Homepage Share: window.location.origin is not available.");
+      alert("Cannot generate share link: critical information unavailable.");
+      return;
+    }
+    const shareUrl = `${origin}/${basePath}/${itemId}`;
+
     openShareModal({
       title,
       url: shareUrl,
-      text: type === "meal" ? `Check out this recipe: ${title}` : `Check out this cocktail: ${title}`,
-      type,
+      text: `Check out this ${itemType === "meal" ? "recipe" : "cocktail"}: ${title}`,
+      type: itemType, // Pass the original itemType ('meal' or 'cocktail') to the modal
     });
   } else {
-    console.error("Share modal function not provided.");
+    console.error("Share modal function not provided on Homepage.");
+    alert("Sharing service is currently unavailable.");
   }
 };
 

@@ -28,11 +28,14 @@
     </form>
 
     <!-- Separator -->
+    <!--
     <div class="my-3 text-center text-muted">
       <span class="small">OR</span>
     </div>
+    -->
 
     <!-- Magic Link Form -->
+    <!--
     <form @submit.prevent="handleMagicLinkLogin" class="authForm mb-3">
       <div class="form-floating mb-3">
         <input type="email" class="form-control" id="magicLinkEmail" v-model="magicLinkEmail" required placeholder="your@email.com" :disabled="loadingMagicLink || loading" />
@@ -50,6 +53,7 @@
         </button>
       </div>
     </form>
+    -->
 
     <p class="authLinks text-center">Don't have an account? <NuxtLink to="/signup" class="fw-medium">Sign up</NuxtLink></p>
     <p class="authLinks text-center mt-3">
@@ -132,18 +136,21 @@ const handleLogin = async () => {
 };
 
 // Handle Magic Link Login
+/*
 const handleMagicLinkLogin = async () => {
   error.value = null;
   loadingMagicLink.value = true;
   try {
     // Check if window is defined before accessing origin (client-side check)
-    const redirectUrl = typeof window !== "undefined" ? `${window.location.origin}/` : "/"; // Fallback if run server-side unexpectedly
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    // The redirectUrl should point to the page that handles the auth callback, configured as '/confirm' in nuxt.config.ts
+    const emailRedirectToUrl = origin ? `${origin}/confirm` : '/confirm';
 
     const { error: otpError } = await client.auth.signInWithOtp({
       email: magicLinkEmail.value,
       options: {
         // Ensure this matches a redirect URL in your Supabase Auth settings
-        emailRedirectTo: redirectUrl,
+        emailRedirectTo: emailRedirectToUrl,
       },
     });
     if (otpError) throw otpError;
@@ -157,6 +164,7 @@ const handleMagicLinkLogin = async () => {
     loadingMagicLink.value = false;
   }
 };
+*/
 
 // Page metadata
 definePageMeta({
